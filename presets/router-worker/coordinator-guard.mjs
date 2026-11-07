@@ -160,7 +160,13 @@ const DEFAULT_KEEP = [
   // （`keep = new Set(DEFAULT_KEEP)` 之后逐项 `add`），所以写在这里不会被覆盖。
   'file_info',
 
-  // ── 委派：Multitask 的核心动作 ──
+  // ── 委派：Router 的核心动作 ──
+  //
+  // `ticket_create` 是本模式**主要**的派活入口（带名工单）：它把「短名」提升为必填参数，
+  // 而短名会进 `subagentCatalog.label`，也就是 `dsh-subagent-tree` 侧栏子对话树显示的
+  // 那一行。漏掉它的表现是「新模式装上了但协调者看不到这个工具」—— 保留集是白名单，
+  // 没列进来的工具默认不可见，且**不报错**，所以这里必须写明。
+  'ticket_create',
   'subagent',
   'subagent_fork',
 
@@ -497,7 +503,7 @@ export function apply(ctx, config) {
       const lifted = release(agent)
       if (lifted) {
         ctx.logger?.info?.(
-          `dsh-subagent-tree: released the shock absorber for a session of another mode (${owner ?? 'no preset'}); its tool roster is left untouched`,
+          `dsh-subagent-tree: released the project-manager guard for a session of another mode (${owner ?? 'no preset'}); its tool roster is left untouched`,
         )
       }
       return
@@ -510,7 +516,7 @@ export function apply(ctx, config) {
     if (visible.length === 0) {
       // 读不到工具面时**不能**装一条空限制 —— 那会静默地「什么都没限制」，
       // 让模式看起来生效了而实际漏风。留待下一个窗口重试。
-      warn('no tool schemas were readable for a coordinator scope; the shock absorber is NOT engaged for this session yet (will retry on the next tool call)')
+      warn('no tool schemas were readable for a coordinator scope; the project-manager guard is NOT engaged for this session yet (will retry on the next tool call)')
       return
     }
 
@@ -519,7 +525,7 @@ export function apply(ctx, config) {
 
     const tools = agent?.ctx?.tools
     if (tools === undefined || typeof tools.restrict !== 'function') {
-      warn('the agent scope exposes no tools.restrict(); the shock absorber cannot be engaged and this session keeps the full roster')
+      warn('the agent scope exposes no tools.restrict(); the project-manager guard cannot be engaged and this session keeps the full roster')
       return
     }
 
