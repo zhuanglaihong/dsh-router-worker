@@ -1,0 +1,7 @@
+# dsh-subagent-tree bundle patch
+#
+# 一行 insert：把本插件挂进 host 插件树。浏览器半由 package.json 的
+# `dsh.client` 声明自动加载（platform: web），不需要额外的 client 行。
+- insert:
+    - id: subagent-tree
+      name: 'dsh-subagent-tree'

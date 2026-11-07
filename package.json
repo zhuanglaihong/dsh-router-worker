@@ -1,0 +1,67 @@
+{
+  "name": "dsh-subagent-tree",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "在左侧会话列表里把子代理对话画成主对话的缩进子树：连接线、编号 + 短名、运行状态、可折叠。对任意 agent 模式生效，不依赖任何主题插件或多任务模式。",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE",
+    "docs/shots"
+  ],
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "sidebar",
+    "subagent",
+    "tree",
+    "session-tree"
+  ],
+  "license": "MIT",
+  "author": "lighthope",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lighthope/dsh-subagent-tree.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lighthope/dsh-subagent-tree/issues"
+  },
+  "homepage": "https://github.com/lighthope/dsh-subagent-tree#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dsh": {
+    "engines": {
+      "dsh": ">=0.2.0-rc.1"
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-slots"
+      ]
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh": ">=0.2.0-rc.1"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh": {
+      "optional": true
+    }
+  }
+}
