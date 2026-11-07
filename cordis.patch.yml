@@ -2,6 +2,11 @@
 #
 # 一行 insert：把本插件挂进 host 插件树。浏览器半由 package.json 的
 # `dsh.client` 声明自动加载（platform: web），不需要额外的 client 行。
+#
+# host 半（`lib/index.js`）在激活时声明本包自带的「Router 项目经理模式」
+# （preset id `router-worker`），并注册两类自建 worker 后端
+# （`router_worker_ptc` / `router_worker_minimal`）。声明成功 = 新会话的
+# 模式选择器里出现该模式。
 - insert:
     - id: subagent-tree
       name: 'dsh-subagent-tree'

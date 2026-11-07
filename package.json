@@ -1,8 +1,8 @@
 {
   "name": "dsh-subagent-tree",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
-  "description": "在左侧会话列表里把子代理对话画成主对话的缩进子树：连接线、编号 + 短名、运行状态、可折叠。对任意 agent 模式生效，不依赖任何主题插件或多任务模式。",
+  "description": "一个插件两件事：把子代理对话画成主对话的缩进子树（连接线、短名、状态、折叠），并自带「Router 项目经理模式」——主对话只拆任务派工单，读写执行全下放子代理。",
   "main": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
@@ -11,8 +11,10 @@
   },
   "files": [
     "lib",
+    "presets",
     "cordis.patch.yml",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE",
     "docs/shots"
   ],
@@ -20,10 +22,13 @@
     "deepseek-harness",
     "dsh",
     "dsh-plugin",
+    "dsh-agent-preset",
     "sidebar",
     "subagent",
     "tree",
-    "session-tree"
+    "session-tree",
+    "router-worker",
+    "orchestration"
   ],
   "license": "MIT",
   "author": "lighthope",
@@ -39,7 +44,7 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "dsh": {
     "engines": {
@@ -52,15 +57,21 @@
       "platform": "web",
       "inject": [
         "@deepseek-ai/dsh-client-locale",
-        "@deepseek-ai/dsh-client-ui-slots"
+        "@deepseek-ai/dsh-client-ui-slots",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-api-remotes"
       ]
     }
   },
   "peerDependencies": {
-    "@deepseek-ai/dsh": ">=0.2.0-rc.1"
+    "@deepseek-ai/dsh": ">=0.2.0-rc.1",
+    "react": "^18.2.0"
   },
   "peerDependenciesMeta": {
     "@deepseek-ai/dsh": {
+      "optional": true
+    },
+    "react": {
       "optional": true
     }
   }
