@@ -83,8 +83,10 @@ dsh plugin --profile <你的 profile> add /path/to/dsh-subagent-tree
 
 | 配置 | 默认 | 说明 |
 |---|---|---|
-| `runtime` | `true` | 设成 `false` 就完全不装工单表 —— `ticket_create` 退回「直接派发」，不排队、不持久化、不回收重启残留 |
+| `runtime` | `true` | 设成 `false` 就完全不装工单表 —— `ticket_create` 退回「直接派发」，不排队、不持久化、不回收重启残留，也不跑 Watchdog |
 | `stateDir` | `$DSH_HOME/state/router-worker` | 换 sqlite 落地目录。`$DSH_HOME` 没设时是 `~/.dsh` |
+
+Watchdog 不需要单独配置：它随 `runtime` 一起启停，阈值（60 秒巡检 / 15 分钟静默 / 30 分钟排队提醒）写在 `lib/watchdog.js` 顶部的常量里。
 
 ## 它怎么拿到数据的
 
@@ -133,6 +135,7 @@ MIT
 - **每张工单必须有短名**：`ticket_create` 的 `title` 是必填参数（2–40 字），原样写进宿主记录的 `subagentCatalog.label` —— 也就是本插件侧栏树上显示的那一行。
 - **工单会排队、会记住**：工单落在 `$DSH_HOME/state/router-worker/tickets.db`（sqlite）。宿主名额满了不会把工单判死，只留在队列里等 —— 宿主自己的原文是「Admission does not queue」，排队这件事得由我们做。重启后正在跑的工单会去查子会话还在不在：还在就接着等，没了就标失败并补一条通知，不会让你对着一个永远「运行中」的行发呆。
 - **结果回流**：worker 干完把结论交回主对话，主对话只保留结论，不保留过程。宿主自己会发一条完成通知；本插件额外的一张 outbox 表补的是它补不了的两种情况 —— 进程重启后、以及父会话当时不在回合中。投递失败会退避重试（1 秒 → 5 秒 → 30 秒 → 5 分钟），10 次投不出去才放弃并告警。
+- **卡死自动收尾（Watchdog）**：还有第三类异常 —— worker 没崩、没发 `turn/end`、却也不再产出（网络挂起、模型卡死、工具僵住）。watchdog 每 60 秒巡检，某张 `running` 工单静默超过 15 分钟就中断它的子会话、标 `failed` 并通知主对话，把占住的并发名额还回去；`queued` 超 30 分钟只提醒一次，不改状态。心跳取 `session/event`（不是 `updated_at`），所以正在流式输出、连续调工具的 worker 不会被误杀；刚重启恢复的工单会先给一个完整宽限期。刻意**不用 LLM 判断跑偏**，只做「静默超时」这一条机械判据。
 
 > 工单表是**可选**的：`node:sqlite` 打不开时自动降级成内存表并告警 —— 功能全在，只是重启即失忆。想让工单落地，把 `runtime` 保持默认（见下面的配置表）。
 

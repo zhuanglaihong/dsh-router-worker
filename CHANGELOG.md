@@ -14,6 +14,27 @@
 - 两类自建 worker 后端 `router_worker_ptc` / `router_worker_minimal` 由本包
   宿主半注册。
 
+### Phase 4 — Watchdog（卡死的工单自动收尾）
+
+- **补第三类异常**：`turn/end` 盖正常结束、`recoverOnBoot` 盖进程重启，剩下的空格是
+  「子会话还活着却不再发任何事件」（网络挂起 / 模型卡死 / 工具僵住）。那种工单会
+  永远挂在 `running`、占住并发名额，后面的 `queued` 永远派不出去。
+- `lib/watchdog.js` 是**纯逻辑模块**（零宿主依赖、不 import cordis、可注入假时钟），
+  60 秒巡检三条规则：running 静默超 15 分钟 → `interrupt` + 标 `failed` + 通知父会话；
+  `worker_session` 为空的 running 行跳过（交给恢复逻辑，不猜）；queued 超 30 分钟
+  只 warn 一次、不改状态。outbox 重试 ≥10 次标红由 `outbox.js` 负责，不重复判。
+- **心跳来自 `session/event` 而非 `updated_at`**：后者只在状态流转时变，一个正在
+  流式输出、连续调工具的 worker 一行都不写，15 分钟后照样会被误杀。
+  `runtime.js` 在收到被跟踪子会话的任意事件时调 `touch`。
+- **重启不误杀**：`recoverOnBoot` 判 kept 的行恢复后补一次 `touch`；脉搏表为空的第一轮
+  巡检只登记不判，绝不用持久 `started_at`（可能 20 分钟前）把还在跑的活判死。
+- `interrupt` 用「持久父地址」形状（`interruptByParent` / `{kind:'user', parentSessionId}`）：
+  Watchdog 跑在宿主平面，手上没有那个父会话的 live Agent 对象，`kind:'ancestor'` 拿不到。
+- 刻意**不用 LLM 判断跑偏**（成本不可靠），只做「静默超时」这一条机械判据。
+- `test/watchdog.test.mjs`：9 个零依赖单测（`node --test`，Windows/Linux/macOS 等价），
+  覆盖静默判死 / 心跳续命 / 空 worker_session / queued 只 warn / 重启不误杀 /
+  isAlive=false 省中断 / 中断抛错仍判失败 / start-dispose / 并发重入。
+
 ### Phase 2 — 工单持久化、队列与结果回流
 
 - **工单落到 sqlite**（`lib/store.js`）：`$DSH_HOME/state/router-worker/tickets.db`，
