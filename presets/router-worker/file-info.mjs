@@ -77,7 +77,7 @@
  *   · `FILE-INFO-ENGAGED` —— 工具**真的**注册上了；
  *   · `FILE-INFO-SKIPPED reason=…` —— 没注册，以及为什么。
  *
- * @module dsh-subagent-tree/presets/router-worker/file-info
+ * @module dsh-router-worker/presets/router-worker/file-info
  */
 
 /** Cordis 插件名，用于 loader 诊断。 */
@@ -234,7 +234,7 @@ function warnOnceFactory(ctx) {
     if (seen.has(message)) return
     seen.add(message)
     try {
-      ctx.logger?.warn?.(`dsh-subagent-tree/file-info: ${message}`)
+      ctx.logger?.warn?.(`dsh-router-worker/file-info: ${message}`)
     } catch {
       // 日志通道不可用不能反过来炸掉会话。
     }
@@ -571,7 +571,7 @@ export function apply(ctx, config) {
       },
     })
     ctx.logger?.info?.(
-      `dsh-subagent-tree/file-info: ${ENGAGED} — registered read-only tool "${TOOL_NAME}" on ctx.fs.resolve()+stat()`,
+      `dsh-router-worker/file-info: ${ENGAGED} — registered read-only tool "${TOOL_NAME}" on ctx.fs.resolve()+stat()`,
     )
   } catch (error) {
     // 注册失败必须响亮：本模块是「shell 之外的第二条路」，装不上等于 D5 没解决。

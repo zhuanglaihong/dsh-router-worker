@@ -31,7 +31,7 @@ assignees: ''
 
 ## 日志
 
-请把 `~/.dsh/logs/desktop-next.log` 里含 `dsh-subagent-tree` / `ROUTER-` /
+请把 `~/.dsh/logs/desktop-next.log` 里含 `dsh-router-worker` / `ROUTER-` /
 `TICKET-CREATE-` / `settings mount` 的行贴进来（不用整份日志）：
 
 ```

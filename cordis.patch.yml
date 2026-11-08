@@ -1,4 +1,4 @@
-# dsh-subagent-tree bundle patch
+# dsh-router-worker bundle patch
 #
 # 一行 insert：把本插件挂进 host 插件树。浏览器半由 package.json 的
 # `dsh.client` 声明自动加载（platform: web），不需要额外的 client 行。
@@ -8,5 +8,5 @@
 # （`router_worker_ptc` / `router_worker_minimal`）。声明成功 = 新会话的
 # 模式选择器里出现该模式。
 - insert:
-    - id: subagent-tree
-      name: 'dsh-subagent-tree'
+    - id: router-worker
+      name: 'dsh-router-worker'

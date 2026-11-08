@@ -1,6 +1,6 @@
 # 实现计划：右键菜单里的「子对话」
 
-> 本文只是**计划**，不包含代码改动。前两步（主题无关的子树 + 任意模式的父子关系）已经实现并在 `dsh-subagent-tree` 里可用了。
+> 本文只是**计划**，不包含代码改动。前两步（主题无关的子树 + 任意模式的父子关系）已经实现并在 `dsh-router-worker` 里可用了。
 
 ## 1. 现状：为什么现在只有「分叉会话」
 
@@ -38,7 +38,7 @@
 - **代价**：用户要写一句任务书；这不是「一条可以继续聊的对话」，做完就结束。
 - **实现要点**：
   1. 菜单注入：宿主没有 `sidebar.workspaces.session.row.action` 之外的菜单插槽（那个是行尾 hover 按钮，不是右键菜单），所以仍然要 DOM 注入 —— 监听 `contextmenu`，找到右键的那一行 `[data-row-key^="session:"]`，在宿主菜单容器里插一项（锚点用 `role="menu"`）。
-  2. 派发：客户端不能直接调工具，需要一条 Host Remote：`subagentTree.dispatch({ parentSessionId, brief })`，host 半调 `ctx.get('subagents').spawn(...)`（或复用 `tool-subagent` 的执行面）。
+  2. 派发：客户端不能直接调工具，需要一条 Host Remote：`routerWorker.dispatch({ parentSessionId, brief })`，host 半调 `ctx.get('subagents').spawn(...)`（或复用 `tool-subagent` 的执行面）。
   3. 结果回流：子代理完成事件 → 往主会话注入一条消息（`sessions.prompt(..., 'queue')` 的等价物）。
 
 ### 路线 B：可续接的「侧边子对话」

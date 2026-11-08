@@ -96,7 +96,7 @@
  * 它们不受 scope 过滤，所以「已经切走、本守卫够不到」的 agent 也能在这一刻被
  * 解除限制。没有这条，切换后那 21 个工具会一直缺着。
  *
- * @module dsh-subagent-tree/presets/router-worker/coordinator-guard
+ * @module dsh-router-worker/presets/router-worker/coordinator-guard
  */
 
 /** Cordis 插件名，用于 loader 诊断。 */
@@ -120,7 +120,7 @@ const DEFAULT_PRESET_ID = 'router-worker'
  * 安静地不管即可；而读不出事实时既不能收窄（可能削到别的模式）、也不该假装没事，
  * 所以要留一条警告。
  */
-const PRESET_UNKNOWN = Symbol('dsh-subagent-tree/unknown-preset')
+const PRESET_UNKNOWN = Symbol('dsh-router-worker/unknown-preset')
 
 /**
  * 协调者默认保留的工具。
@@ -163,7 +163,7 @@ const DEFAULT_KEEP = [
   // ── 委派：Router 的核心动作 ──
   //
   // `ticket_create` 是本模式**主要**的派活入口（带名工单）：它把「短名」提升为必填参数，
-  // 而短名会进 `subagentCatalog.label`，也就是 `dsh-subagent-tree` 侧栏子对话树显示的
+  // 而短名会进 `subagentCatalog.label`，也就是 `dsh-router-worker` 侧栏子对话树显示的
   // 那一行。漏掉它的表现是「新模式装上了但协调者看不到这个工具」—— 保留集是白名单，
   // 没列进来的工具默认不可见，且**不报错**，所以这里必须写明。
   'ticket_create',
@@ -207,7 +207,7 @@ function warnOnceFactory(ctx) {
     if (seen.has(message)) return
     seen.add(message)
     try {
-      ctx.logger?.warn?.(`dsh-subagent-tree/coordinator-guard: ${message}`)
+      ctx.logger?.warn?.(`dsh-router-worker/coordinator-guard: ${message}`)
     } catch {
       // 日志通道不可用不能反过来炸掉会话。
     }
@@ -503,7 +503,7 @@ export function apply(ctx, config) {
       const lifted = release(agent)
       if (lifted) {
         ctx.logger?.info?.(
-          `dsh-subagent-tree: released the project-manager guard for a session of another mode (${owner ?? 'no preset'}); its tool roster is left untouched`,
+          `dsh-router-worker: released the project-manager guard for a session of another mode (${owner ?? 'no preset'}); its tool roster is left untouched`,
         )
       }
       return
@@ -564,7 +564,7 @@ export function apply(ctx, config) {
       const key = keyOf(agent)
       if (key !== undefined) tracked.set(key, agent)
       ctx.logger?.info?.(
-        `dsh-subagent-tree: coordinator scope engaged — withheld ${withheld.length} tool(s): ${[...withheld].sort().join(', ')}`,
+        `dsh-router-worker: coordinator scope engaged — withheld ${withheld.length} tool(s): ${[...withheld].sort().join(', ')}`,
       )
     } catch (error) {
       // `restrict()` 会在名字未知时抛错。scope-local 那一类已在上方被扣下，所以走到

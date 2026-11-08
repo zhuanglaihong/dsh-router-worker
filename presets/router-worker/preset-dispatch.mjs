@@ -41,7 +41,7 @@
  * 协调者据此能改派，而不是对着一个空 id 发呆。这与 `minimal-guard` 的「响亮告警」同向，
  * 与 `subagent-mode` 的「安静降级」相反 —— 因为这里的失败对**本次任务**是致命的。
  *
- * @module dsh-subagent-tree/presets/router-worker/preset-dispatch
+ * @module dsh-router-worker/presets/router-worker/preset-dispatch
  */
 
 /** Cordis 插件名，用于 loader 诊断。 */
@@ -109,7 +109,7 @@ function warnOnceFactory(ctx) {
     if (seen.has(message)) return
     seen.add(message)
     try {
-      ctx.logger?.warn?.(`dsh-subagent-tree/preset-dispatch: ${message}`)
+      ctx.logger?.warn?.(`dsh-router-worker/preset-dispatch: ${message}`)
     } catch {
       // 日志通道不可用不能反过来炸掉会话。
     }
@@ -330,7 +330,7 @@ export function apply(ctx, config) {
         return { ok: false, message: `Dispatching to "${presetId}" returned no subagent id.` }
       }
       ctx.logger?.info?.(
-        `dsh-subagent-tree: delegated to agent preset "${presetId}" as subagent ${subagentId} [PRESET-DISPATCH-STARTED]`,
+        `dsh-router-worker: delegated to agent preset "${presetId}" as subagent ${subagentId} [PRESET-DISPATCH-STARTED]`,
       )
       return { ok: true, subagentId, message: `Started a "${presetId}" worker: ${subagentId}` }
     } catch (error) {
@@ -368,7 +368,7 @@ export function apply(ctx, config) {
       },
     })
     ctx.logger?.info?.(
-      `dsh-subagent-tree: registered "${TOOL_NAME}" \u2014 the coordinator can dispatch to any installed agent mode [PRESET-DISPATCH-ENGAGED]`,
+      `dsh-router-worker: registered "${TOOL_NAME}" \u2014 the coordinator can dispatch to any installed agent mode [PRESET-DISPATCH-ENGAGED]`,
     )
   } catch (error) {
     warn(

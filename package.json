@@ -1,5 +1,5 @@
 {
-  "name": "dsh-subagent-tree",
+  "name": "dsh-router-worker",
   "version": "0.2.0",
   "type": "module",
   "description": "一个插件两件事：把子代理对话画成主对话的缩进子树（连接线、短名、状态、折叠），并自带「Router 项目经理模式」——主对话只拆任务派工单，读写执行全下放子代理。",
@@ -34,12 +34,12 @@
   "author": "lighthope",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lighthope/dsh-subagent-tree.git"
+    "url": "git+https://github.com/lighthope/dsh-router-worker.git"
   },
   "bugs": {
-    "url": "https://github.com/lighthope/dsh-subagent-tree/issues"
+    "url": "https://github.com/lighthope/dsh-router-worker/issues"
   },
-  "homepage": "https://github.com/lighthope/dsh-subagent-tree#readme",
+  "homepage": "https://github.com/lighthope/dsh-router-worker#readme",
   "publishConfig": {
     "access": "public"
   },

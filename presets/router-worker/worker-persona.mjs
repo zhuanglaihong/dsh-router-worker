@@ -58,7 +58,7 @@
  * 但「静默降级」不等于「看不见」：读不到人格、注册被拒这两条路径各留一条带固定
  * 标识的 warn，可 grep。
  *
- * @module dsh-subagent-tree/presets/router-worker/worker-persona
+ * @module dsh-router-worker/presets/router-worker/worker-persona
  */
 
 /** Cordis 插件名，用于 loader 诊断。 */
@@ -100,7 +100,7 @@ function warnOnceFactory(ctx) {
     if (seen.has(message)) return
     seen.add(message)
     try {
-      ctx.logger?.warn?.(`dsh-subagent-tree/worker-persona: ${message}`)
+      ctx.logger?.warn?.(`dsh-router-worker/worker-persona: ${message}`)
     } catch {
       // 日志通道不可用不能反过来炸掉会话。
     }
@@ -268,7 +268,7 @@ export function apply(ctx, config) {
       })
       handled.add(agent)
       ctx.logger?.info?.(
-        `dsh-subagent-tree: installed the worker persona for a delegated subagent [WORKER-PERSONA-ENGAGED]`,
+        `dsh-router-worker: installed the worker persona for a delegated subagent [WORKER-PERSONA-ENGAGED]`,
       )
     } catch (error) {
       handled.add(agent)

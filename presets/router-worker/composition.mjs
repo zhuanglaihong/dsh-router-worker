@@ -26,7 +26,7 @@
  * `file://` 绝对 URL。用 JS 直接构造，`new URL(..., import.meta.url)` 一步到位，
  * 也省掉一个 YAML 子集解析器。
  *
- * @module dsh-subagent-tree/presets/router-worker/composition
+ * @module dsh-router-worker/presets/router-worker/composition
  */
 
 /**
@@ -527,7 +527,7 @@ export const WORKER_PERSONA = `你是 Router 模式的 WORKER 子代理：一个
  *   restates or omits context that does not exist."
  *
  * （中文对照在同文件 `:1034947`。）也就是说**普通子代理与 fork 本来就该拿到两套不同
- * 措辞**；`dsh-subagent-tree` 让两行共用 `WORKER_PERSONA`，等于把 fork 强行套上了「全新
+ * 措辞**；`dsh-router-worker` 让两行共用 `WORKER_PERSONA`，等于把 fork 强行套上了「全新
  * 子代理」那套说法 —— 这与上游明确写下的意图相反，也正是 D2 的根因。
  *
  * fork 工具的准确描述在 `:1035422`（逐字）：

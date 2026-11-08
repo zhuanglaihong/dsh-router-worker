@@ -63,7 +63,7 @@
  * ── 为什么还要给**既存对象**补一次继承 + 标签（2026-11-01 的真实缺口）──────────
  *
  * 宿主那三样授权**只在对象创建时**继承，从不向既有子目录回溯。实测本机
- * `E:\dsh-subagent-tree`：根三项齐全，而 `.git`、`docs`、`lib`、`presets`、`test`、
+ * `E:\dsh-router-worker`：根三项齐全，而 `.git`、`docs`、`lib`、`presets`、`test`、
  * `.github`、`.cursor`（2026-10-27 创建）**一条都没有**；只有 `research`
  * （2026-11-01 创建）齐全。后果不是「权限紧」而是「沙箱命令直接失败」：
  *
@@ -166,7 +166,7 @@
  *   · 不碰非本 preset 的会话（与同仓守卫同一条纪律）：`agent/created` 靠 scope 过滤，
  *     切换广播靠 `presetId` 显式比对（只认「切进来」这一个方向）
  *
- * @module dsh-subagent-tree/presets/router-worker/workspace-acl
+ * @module dsh-router-worker/presets/router-worker/workspace-acl
  */
 
 /** Cordis 插件名，用于 loader 诊断。 */
@@ -431,7 +431,7 @@ function warnOnceFactory(ctx) {
     if (seen.has(message)) return
     seen.add(message)
     try {
-      ctx.logger?.warn?.(`dsh-subagent-tree/workspace-acl: ${message}`)
+      ctx.logger?.warn?.(`dsh-router-worker/workspace-acl: ${message}`)
     } catch {
       // 日志通道不可用不能反过来炸掉会话。
     }
@@ -680,7 +680,7 @@ export function apply(ctx, config) {
   if (config?.enabled === false) return
   if (config?.autoGrantWriteOwner === false) {
     try {
-      ctx.logger?.info?.('dsh-subagent-tree: ROUTER-WORKSPACE-ACL-SKIPPED reason=disabled-by-config')
+      ctx.logger?.info?.('dsh-router-worker: ROUTER-WORKSPACE-ACL-SKIPPED reason=disabled-by-config')
     } catch {
       // 日志通道不可用不能反过来炸掉会话。
     }
@@ -728,12 +728,12 @@ export function apply(ctx, config) {
       switch (outcome) {
         case 'ok':
           ctx.logger?.info?.(
-            `dsh-subagent-tree: ROUTER-WORKSPACE-ACL-OK ${JSON.stringify(dir)} already grants WRITE_OWNER; nothing was changed`,
+            `dsh-router-worker: ROUTER-WORKSPACE-ACL-OK ${JSON.stringify(dir)} already grants WRITE_OWNER; nothing was changed`,
           )
           return
         case 'granted':
           ctx.logger?.info?.(
-            `dsh-subagent-tree: ROUTER-WORKSPACE-ACL-GRANTED ${JSON.stringify(dir)} — added WRITE_OWNER only (no FullControl), so the ACL sandbox can provision this workspace`,
+            `dsh-router-worker: ROUTER-WORKSPACE-ACL-GRANTED ${JSON.stringify(dir)} — added WRITE_OWNER only (no FullControl), so the ACL sandbox can provision this workspace`,
           )
           return
         default: {
@@ -743,7 +743,7 @@ export function apply(ctx, config) {
                 ? String(result.error?.message ?? result.error)
                 : (String(result.stdout ?? '').trim().replace(/^FAILED:\s*/, '') || `exit ${String(result.exitCode)}`))
           ctx.logger?.info?.(
-            `dsh-subagent-tree: ROUTER-WORKSPACE-ACL-FAILED reason=${JSON.stringify(detail)} dir=${JSON.stringify(dir)}`,
+            `dsh-router-worker: ROUTER-WORKSPACE-ACL-FAILED reason=${JSON.stringify(detail)} dir=${JSON.stringify(dir)}`,
           )
           return
         }
@@ -778,19 +778,19 @@ export function apply(ctx, config) {
       switch (outcome) {
         case 'ok':
           ctx.logger?.info?.(
-            `dsh-subagent-tree: ROUTER-WORKSPACE-ACL-SUB-OK ${JSON.stringify(dir)} existing top-level entries (directories and files) already carry the integrity label; nothing was changed`,
+            `dsh-router-worker: ROUTER-WORKSPACE-ACL-SUB-OK ${JSON.stringify(dir)} existing top-level entries (directories and files) already carry the integrity label; nothing was changed`,
           )
           return
         case 'repaired':
           ctx.logger?.info?.(
-            `dsh-subagent-tree: ROUTER-WORKSPACE-ACL-SUB-REPAIRED ${JSON.stringify(dir)} — existing objects re-inherited the parent entries and the Low integrity label was written (WRITE_OWNER and Low only, no FullControl)`,
+            `dsh-router-worker: ROUTER-WORKSPACE-ACL-SUB-REPAIRED ${JSON.stringify(dir)} — existing objects re-inherited the parent entries and the Low integrity label was written (WRITE_OWNER and Low only, no FullControl)`,
           )
           return
         case 'skipped': {
           const match = /SUB-SKIPPED\s+reason=(\S+)/.exec(String(result.stdout ?? ''))
           const reason = match !== null ? match[1] : 'unrecognized-output'
           ctx.logger?.info?.(
-            `dsh-subagent-tree: ROUTER-WORKSPACE-ACL-SUB-SKIPPED reason=${JSON.stringify(reason)} dir=${JSON.stringify(dir)}`,
+            `dsh-router-worker: ROUTER-WORKSPACE-ACL-SUB-SKIPPED reason=${JSON.stringify(reason)} dir=${JSON.stringify(dir)}`,
           )
           return
         }
@@ -801,7 +801,7 @@ export function apply(ctx, config) {
                 ? String(result.error?.message ?? result.error)
                 : (String(result.stdout ?? '').trim().replace(/^FAILED:\s*/, '') || `exit ${String(result.exitCode)}`))
           ctx.logger?.info?.(
-            `dsh-subagent-tree: ROUTER-WORKSPACE-ACL-SUB-FAILED reason=${JSON.stringify(detail)} dir=${JSON.stringify(dir)}`,
+            `dsh-router-worker: ROUTER-WORKSPACE-ACL-SUB-FAILED reason=${JSON.stringify(detail)} dir=${JSON.stringify(dir)}`,
           )
           return
         }
@@ -828,7 +828,7 @@ export function apply(ctx, config) {
       if (typeof cwd !== 'string' || cwd.trim() === '') {
         try {
           ctx.logger?.info?.(
-            `dsh-subagent-tree: ROUTER-WORKSPACE-ACL-SKIPPED reason=no-session-cwd trigger=${trigger}`,
+            `dsh-router-worker: ROUTER-WORKSPACE-ACL-SKIPPED reason=no-session-cwd trigger=${trigger}`,
           )
         } catch {
           // 同上。
@@ -840,7 +840,7 @@ export function apply(ctx, config) {
       if (mode !== 'workspace-write') {
         try {
           ctx.logger?.info?.(
-            `dsh-subagent-tree: ROUTER-WORKSPACE-ACL-SKIPPED reason=sandbox-mode-${String(mode ?? 'unreadable')} dir=${JSON.stringify(cwd)} trigger=${trigger}`,
+            `dsh-router-worker: ROUTER-WORKSPACE-ACL-SKIPPED reason=sandbox-mode-${String(mode ?? 'unreadable')} dir=${JSON.stringify(cwd)} trigger=${trigger}`,
           )
         } catch {
           // 同上。
@@ -861,7 +861,7 @@ export function apply(ctx, config) {
       if (sensitive !== undefined) {
         try {
           ctx.logger?.info?.(
-            `dsh-subagent-tree: ROUTER-WORKSPACE-ACL-SKIPPED reason=sensitive-path-${sensitive} dir=${JSON.stringify(cwd)} trigger=${trigger}` +
+            `dsh-router-worker: ROUTER-WORKSPACE-ACL-SKIPPED reason=sensitive-path-${sensitive} dir=${JSON.stringify(cwd)} trigger=${trigger}` +
               ' — this directory holds DSH itself or its state; granting WRITE_OWNER here would let the sandbox stamp it',
           )
         } catch {

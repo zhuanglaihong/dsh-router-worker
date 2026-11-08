@@ -1,4 +1,4 @@
-# dsh-subagent-tree 0.2.0 — Router + Worker 合并版开发计划
+# dsh-router-worker 0.2.0 — Router + Worker 合并版开发计划
 
 > 基座：`dsh-multitask` 1.3.3（MIT）分叉。目标：把「侧栏子对话显示」和「Router/Worker 调度」**合并进同一个插件**，装一次、一个模式、一条版本线。
 >
@@ -10,7 +10,7 @@
 
 ## 一、合并后的形态（与上一版计划的根本区别）
 
-上一版计划是两个插件（`dsh-subagent-tree` 显示 + `dsh-router-worker` 调度）。改为**一个包**：
+上一版计划是两个插件（`dsh-router-worker` 显示 + `dsh-router-worker` 调度）。改为**一个包**：
 
 ```
 安装一次 → 得到两件事
@@ -27,12 +27,12 @@
 
 ### 包名与仓库身份（**需你一句话拍板**）
 
-- **现状**：包名 `dsh-subagent-tree`，`package.json` 里 repository 指向 `github.com/lighthope/dsh-subagent-tree`，**远程仓库还没建**。
+- **现状**：包名 `dsh-router-worker`，`package.json` 里 repository 指向 `github.com/lighthope/dsh-router-worker`，**远程仓库还没建**。
 - **问题**：0.2.0 之后它的主要能力是调度，不再是「一棵树」，名字偏了。
 - **我的建议**：既然远程还没建，现在改名成本接近零。候选：
   - `dsh-superagent`（最贴目标，但易与官方原型混淆）
   - `dsh-router-worker`（最准，但丢掉显示能力的存在感）
-  - 保持 `dsh-subagent-tree`（零成本，名字功能错位）
+  - 保持 `dsh-router-worker`（零成本，名字功能错位）
 - **默认动作**：本计划按**保持现名**推进（不改 git 历史、不改已提交的 v1 身份）。你在建远程前一句话就能改，之后改要动 npm 包名 + 目录 + 全部 import。
 
 ---
@@ -69,7 +69,7 @@ MIT License / Copyright (c) 2026 dsh-multitask contributors
 派单信息只活在主会话上下文里，应用重启后没有任何记录。
 
 > **Ticket 持久化**：`node:sqlite`（Node 24 自带，零依赖，已在本机实测 `DatabaseSync` 可用、无实验性警告）落库到
-> `<DSH_HOME>/state/subagent-tree/tickets.db`（用 `path.join` 拼，三平台通用）。
+> `<DSH_HOME>/state/router-worker/tickets.db`（用 `path.join` 拼，三平台通用）。
 
 ```sql
 CREATE TABLE IF NOT EXISTS ticket (
@@ -134,7 +134,7 @@ CREATE TABLE IF NOT EXISTS outbox (
 ## 四、合并后的包结构
 
 ```
-dsh-subagent-tree/                    ← 沿用现有仓库
+dsh-router-worker/                    ← 沿用现有仓库
 ├── package.json                      version 0.2.0
 ├── cordis.patch.yml                  insert 三行：树 + 宿主引擎 + 预设
 ├── LICENSE                           MIT（本包 + 上游）
@@ -174,8 +174,8 @@ dsh-subagent-tree/                    ← 沿用现有仓库
 
 ```yaml
 - insert:
-    - id: subagent-tree
-      name: 'dsh-subagent-tree'          # 宿主：预设注册 + 调度引擎 + 树（树本体在 client）
+    - id: router-worker
+      name: 'dsh-router-worker'          # 宿主：预设注册 + 调度引擎 + 树（树本体在 client）
     - id: preset-router-worker
       name: '@deepseek-ai/dsh-agent-preset'
       config:
@@ -197,7 +197,7 @@ dsh-subagent-tree/                    ← 沿用现有仓库
 | 关注点 | 现状 | 0.2.0 要求 |
 |---|---|---|
 | **路径拼接** | multitask 里混用 `join()` 与少量字符串拼接 | 全部改 `node:path` 的 `join`/`resolve`；禁止手写 `/` 或 `\\` |
-| **`DSH_HOME`** | 已由宿主提供 | 用 `join(dshHome, 'state', 'subagent-tree')`；不假设 `~/.dsh` |
+| **`DSH_HOME`** | 已由宿主提供 | 用 `join(dshHome, 'state', 'router-worker')`；不假设 `~/.dsh` |
 | **`node:sqlite`** | Node 24 内置，三平台一致 | `engines.node: ">=24"`；启动 try/catch，失败降级内存 Map + 告警（功能不中断） |
 | **Windows ACL** | `workspace-acl.mjs` 923 行 Windows 专用 | **原样保留**，`process.platform !== 'win32'` 时整段跳过（上游已有判断，需复核） |
 | **文件锁 / 并发** | SQLite WAL 单一写连接 | 三平台一致；Windows 上 WAL 文件句柄释放要在 `close()` 里显式调用 |
@@ -241,9 +241,9 @@ dsh-subagent-tree/                    ← 沿用现有仓库
 | `worker-providers.js` + 所有引用 | `multitask_ptc` / `multitask_minimal` | `router_worker_ptc` / `router_worker_minimal` |
 | `composition.mjs` | `SUBAGENT_PROVIDER` / `FORK_PROVIDER` 常量值 | `router_worker` / `router_worker_fork` |
 | 全部 `.mjs` | 日志标记 `MULTITASK-*` | `ROUTER-*` |
-| 全部 `.mjs` | `'dsh-multitask/...'` 字符串 | `'dsh-subagent-tree/...'` |
+| 全部 `.mjs` | `'dsh-multitask/...'` 字符串 | `'dsh-router-worker/...'` |
 | `cordis.patch.yml` 行 id | `multitask` | `router-worker` |
-| `lib/index.js` | `ownEntryId` / stateDir 名 | `subagent-tree` |
+| `lib/index.js` | `ownEntryId` / stateDir 名 | `router-worker` |
 
 > **provider 名绝不能沿用 `multitask*`** —— 会触发 `DUPLICATE_PROVIDER`，两个模式一起挂。这是 Phase 0 第一验收项。
 
@@ -339,7 +339,7 @@ onBoot:
 - `CHANGELOG.md`：0.1.0（显示）/ 0.2.0（合并）
 - `docs/DESIGN.md`：架构、状态机、恢复逻辑、已知边界
 - 三平台验证矩阵（见第五节）
-- `pnpm pack` → tarball 装进干净 profile 实测（沿用 dsh-subagent-tree 那套沙盒 + CDP 法）
+- `pnpm pack` → tarball 装进干净 profile 实测（沿用 dsh-router-worker 那套沙盒 + CDP 法）
 - `git tag v0.1.0`（补打在现有 commit 上）+ 0.2.0 commit
 
 **总计约 6 个工作日。**
@@ -374,7 +374,7 @@ onBoot:
 
 ## 九、开工前唯一待你决定
 
-**包名**：保持 `dsh-subagent-tree`，还是趁远程没建改成 `dsh-superagent` / `dsh-router-worker`？
+**包名**：保持 `dsh-router-worker`，还是趁远程没建改成 `dsh-superagent` / `dsh-router-worker`？
 
 不改的话我直接按现名推进 Phase 0。
 

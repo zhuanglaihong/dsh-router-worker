@@ -161,17 +161,17 @@ function mkEnv({ boxed }) {
 
 function inspect(env) {
   const all = walk(env.body);
-  const holders = all.filter(n => n.hasAttribute('data-dsh-subagent-tree-of'));
-  const ctrls = all.filter(n => n.hasAttribute('data-dsh-subagent-tree-ctrl'));
-  const toggles = all.filter(n => n.hasAttribute('data-dsh-subagent-tree-toggle'));
-  const childRows = all.filter(n => n.hasAttribute('data-dsh-subagent-tree-row'));
+  const holders = all.filter(n => n.hasAttribute('data-dsh-router-worker-of'));
+  const ctrls = all.filter(n => n.hasAttribute('data-dsh-router-worker-ctrl'));
+  const toggles = all.filter(n => n.hasAttribute('data-dsh-router-worker-toggle'));
+  const childRows = all.filter(n => n.hasAttribute('data-dsh-router-worker-row'));
   const hostClean = Object.values(env.rows).every(r =>
-    !r.hasAttribute('data-dsh-subagent-tree-host') &&
-    !r.hasAttribute('data-dsh-subagent-tree-pad') &&
-    !r.hasAttribute('data-dsh-subagent-tree-push') &&
+    !r.hasAttribute('data-dsh-router-worker-host') &&
+    !r.hasAttribute('data-dsh-router-worker-pad') &&
+    !r.hasAttribute('data-dsh-router-worker-push') &&
     r.children.length === 1 && r.children[0].textContent.startsWith('会话 '));
   const sameParent = holders.every(h => {
-    const row = env.rows[h.getAttribute('data-dsh-subagent-tree-of')];
+    const row = env.rows[h.getAttribute('data-dsh-router-worker-of')];
     return row && h.parentElement === row.parentElement;
   });
   const connected = holders.every(h => h.isConnected && walk(env.body).includes(h));

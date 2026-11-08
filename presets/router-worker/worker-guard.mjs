@@ -85,7 +85,7 @@
  * 当初看到委派工具不在 `tools` 里，正确做法是去读 SDK 那一节里有没有它，
  * 而不是写一句「尚未验证」然后把结论往保守方向猜。保守猜测在这里恰好是错的。
  *
- * @module dsh-subagent-tree/presets/router-worker/worker-guard
+ * @module dsh-router-worker/presets/router-worker/worker-guard
  */
 
 /** Cordis 插件名，用于 loader 诊断。 */
@@ -128,7 +128,7 @@ const TRANSPORT_NAMES = ['run_code', 'structured_output']
  *
  * 两者的处置相同（都不动作），但只有前者值得记一笔 —— 后者是旧会话的正常形态。
  */
-const PROVIDER_UNKNOWN = Symbol('dsh-subagent-tree/unknown-provider')
+const PROVIDER_UNKNOWN = Symbol('dsh-router-worker/unknown-provider')
 
 /**
  * 判断一个 agent 是不是被委派出来的子代理。
@@ -278,7 +278,7 @@ export function apply(ctx, config) {
   const warnOnce = (key, message) => {
     if (warned.has(key)) return
     warned.add(key)
-    ctx.logger?.warn?.(`dsh-subagent-tree: ${message}`)
+    ctx.logger?.warn?.(`dsh-router-worker: ${message}`)
   }
 
   /** 已经处理过的 agent（幂等）。WeakSet：不持有强引用。 */
@@ -421,7 +421,7 @@ export function apply(ctx, config) {
     handled.add(agent)
     if (withheld > 0 || catalogEngaged) {
       ctx.logger?.info?.(
-        `dsh-subagent-tree: worker delegation tools withheld — ${withheld} via restrict()${catalogEngaged ? ' + catalog filter' : ''}: ${[...deny].sort().join(', ')}` +
+        `dsh-router-worker: worker delegation tools withheld — ${withheld} via restrict()${catalogEngaged ? ' + catalog filter' : ''}: ${[...deny].sort().join(', ')}` +
           `${hiddenByCatalogOnly.length > 0 ? ` (catalog-only: ${hiddenByCatalogOnly.sort().join(', ')})` : ''}`,
       )
     }

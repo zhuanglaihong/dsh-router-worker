@@ -81,7 +81,7 @@
  *      机制）。本模块因此**必须**把这些名字从 deny 里排除（它们不在
  *      `restrictableNames` 里，写进去会抛错）。
  *
- * @module dsh-subagent-tree/presets/router-worker/minimal-guard
+ * @module dsh-router-worker/presets/router-worker/minimal-guard
  */
 
 /** Cordis 插件名，用于 loader 诊断。 */
@@ -152,7 +152,7 @@ function warnOnceFactory(ctx) {
     if (seen.has(message)) return
     seen.add(message)
     try {
-      ctx.logger?.warn?.(`dsh-subagent-tree/minimal-guard: ${message}`)
+      ctx.logger?.warn?.(`dsh-router-worker/minimal-guard: ${message}`)
     } catch {
       // 日志通道不可用不能反过来炸掉会话。
     }
@@ -570,7 +570,7 @@ export function apply(ctx, config) {
           const names = [...hidden].sort()
           hidden.clear()
           ctx.logger?.info?.(
-            `dsh-subagent-tree: read-only worker catalog filtered — hid ${names.length} tool(s) that ` +
+            `dsh-router-worker: read-only worker catalog filtered — hid ${names.length} tool(s) that ` +
               `tools.restrict() structurally cannot remove: ${names.join(', ')}`,
           )
         }
@@ -665,7 +665,7 @@ export function apply(ctx, config) {
       if (catalogEngaged) {
         narrowed.add(agent)
         ctx.logger?.info?.(
-          'dsh-subagent-tree: read-only worker catalog filtered — nothing to withhold on the inherited surface',
+          'dsh-router-worker: read-only worker catalog filtered — nothing to withhold on the inherited surface',
         )
       }
       return
@@ -681,7 +681,7 @@ export function apply(ctx, config) {
         warn('the tool registry did not return a disposer for the read-only restriction; it may outlive its agent')
       }
       ctx.logger?.info?.(
-        `dsh-subagent-tree: read-only worker scope engaged — withheld ${deny.length} tool(s): ${[...deny].sort().join(', ')}` +
+        `dsh-router-worker: read-only worker scope engaged — withheld ${deny.length} tool(s): ${[...deny].sort().join(', ')}` +
           `${catalogEngaged ? ' (plus a catalog-level filter for tools that cannot be restricted)' : ''}`,
       )
     } catch (error) {

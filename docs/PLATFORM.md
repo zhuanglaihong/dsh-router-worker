@@ -1,6 +1,6 @@
 # 三平台验证边界（Windows / macOS / Linux）
 
-> 本文如实说明 `dsh-subagent-tree` 在三个操作系统上的**验证到哪一层、哪一层没验**。
+> 本文如实说明 `dsh-router-worker` 在三个操作系统上的**验证到哪一层、哪一层没验**。
 > 结论先行：**macOS 真机已验；Windows / Linux 通过 CI 代码层验证（语法 + 单测 + 打包），
 > GUI 与 ACL 冒烟待真机**。请勿把「CI 绿」当作「Windows 能跑 GUI / ACL」。
 

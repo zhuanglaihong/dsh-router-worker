@@ -73,7 +73,7 @@
  * 所以本模块用与 guard 相同的三信号判定（`origin` / `parentSession` /
  * `delegationDepth`）**先确证这是子代理**，否则直接返回。这是硬前置，不是优化。
  *
- * @module dsh-subagent-tree/presets/router-worker/subagent-mode
+ * @module dsh-router-worker/presets/router-worker/subagent-mode
  */
 
 /** Cordis 插件名，用于 loader 诊断。 */
@@ -145,7 +145,7 @@ function warnOnceFactory(ctx) {
     if (seen.has(message)) return
     seen.add(message)
     try {
-      ctx.logger?.warn?.(`dsh-subagent-tree/subagent-mode: ${message}`)
+      ctx.logger?.warn?.(`dsh-router-worker/subagent-mode: ${message}`)
     } catch {
       // 日志通道不可用不能反过来炸掉会话。
     }
@@ -339,7 +339,7 @@ export function apply(ctx, config) {
       // 注：`ctx.logger` 在本模块里确认可用的通道就是 `info` / `warn`（见成功路径与
       // warnOnceFactory），没有更低级别的通道可选。
       ctx.logger?.info?.(
-        `dsh-subagent-tree: ${PTC_COLLAPSE_SKIPPED} reason=${reason} count=${count} — the worker keeps the native tool surface`,
+        `dsh-router-worker: ${PTC_COLLAPSE_SKIPPED} reason=${reason} count=${count} — the worker keeps the native tool surface`,
       )
     } catch {
       // 与 warnOnceFactory 同理：日志通道不可用不能反过来炸掉会话。
@@ -389,7 +389,7 @@ export function apply(ctx, config) {
       // 成功标识追加在原有文本末尾：级别（info）与措辞都不动，只让「塌缩真的生效了」
       // 变得可 grep —— 否则只能靠「没有失败标识」反推，那对「整段都没跑到」不成立。
       ctx.logger?.info?.(
-        `dsh-subagent-tree: subagent scope presented as "${mode}" — its tool surface is collapsed to run_code + the generated SDK [${PTC_COLLAPSE_ENGAGED}]`,
+        `dsh-router-worker: subagent scope presented as "${mode}" — its tool surface is collapsed to run_code + the generated SDK [${PTC_COLLAPSE_ENGAGED}]`,
       )
     } catch (error) {
       // 走到这里通常是「该 scope 已经声明过别的呈现」，或 scope 尚未就绪。

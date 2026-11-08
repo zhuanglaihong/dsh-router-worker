@@ -5,7 +5,7 @@
  *
  * 上游的四个委派工具（`subagent` / `subagent_fork` / `subagent_ptc` /
  * `subagent_minimal`）都接受一个 `description`，而那个字段会进宿主记录的
- * `subagentCatalog.label` —— `dsh-subagent-tree` 的侧栏子对话树显示的就是它。
+ * `subagentCatalog.label` —— `dsh-router-worker` 的侧栏子对话树显示的就是它。
  *
  * 问题是 `description` 在那些工具的 schema 里是**可选**的，且描述只有一句
  * “A short (3-5 word) label for display”。实测里协调者十次有九次不传，于是侧栏
@@ -43,7 +43,7 @@
  * 与 `preset-dispatch.mjs` 同向：**绝不吞错**。派不出去时把原因原样带回去，让
  * 协调者能改派（换 worker 类型 / 缩并发 / 修目录），而不是对着一个空 id 发呆。
  *
- * @module dsh-subagent-tree/presets/router-worker/ticket-create
+ * @module dsh-router-worker/presets/router-worker/ticket-create
  */
 
 import { randomUUID } from 'node:crypto'
@@ -93,7 +93,7 @@ const TITLE_MAX = 40
  * 本目录守「子模块零相对 import」的约定。`Symbol.for` 走的是全局符号注册表，
  * 同一个字符串在任何模块实例里都解析成同一个符号，所以两边不必共享代码。
  */
-const ROUTER_RUNTIME_KEY = Symbol.for('dsh-subagent-tree.router-runtime')
+const ROUTER_RUNTIME_KEY = Symbol.for('dsh-router-worker.router-runtime')
 
 const PARAMETERS = {
   type: 'object',
@@ -149,7 +149,7 @@ function warnOnceFactory(ctx) {
     if (seen.has(message)) return
     seen.add(message)
     try {
-      ctx.logger?.warn?.(`dsh-subagent-tree/ticket-create: ${message}`)
+      ctx.logger?.warn?.(`dsh-router-worker/ticket-create: ${message}`)
     } catch {
       // 日志通道不可用不能反过来炸掉会话。
     }
@@ -353,7 +353,7 @@ export function apply(ctx, config) {
           parentRequest: typeof exec?.requestId === 'string' ? exec.requestId : undefined,
         })
         ctx.logger?.info?.(
-          `dsh-subagent-tree: ticket "${title}" (${workerType}) queued as ${queued.ticketId} [TICKET-CREATE-QUEUED]`,
+          `dsh-router-worker: ticket "${title}" (${workerType}) queued as ${queued.ticketId} [TICKET-CREATE-QUEUED]`,
         )
         return {
           ok: true,
@@ -396,7 +396,7 @@ export function apply(ctx, config) {
         return { ok: false, message: `Dispatching ticket "${title}" returned no subagent id.` }
       }
       ctx.logger?.info?.(
-        `dsh-subagent-tree: ticket "${title}" (${workerType}) dispatched as subagent ${subagentId} [TICKET-CREATE-STARTED]`,
+        `dsh-router-worker: ticket "${title}" (${workerType}) dispatched as subagent ${subagentId} [TICKET-CREATE-STARTED]`,
       )
       return { ok: true, ticketId, subagentId, message: `Opened ticket "${title}" (${workerType}): ${subagentId}` }
     } catch (error) {
@@ -425,7 +425,7 @@ export function apply(ctx, config) {
       },
     })
     ctx.logger?.info?.(
-      `dsh-subagent-tree: registered "${TOOL_NAME}" \u2014 delegation is ticket-shaped and titles reach the sidebar [TICKET-CREATE-ENGAGED]`,
+      `dsh-router-worker: registered "${TOOL_NAME}" \u2014 delegation is ticket-shaped and titles reach the sidebar [TICKET-CREATE-ENGAGED]`,
     )
   } catch (error) {
     warn(

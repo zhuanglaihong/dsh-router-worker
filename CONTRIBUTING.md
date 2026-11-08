@@ -1,6 +1,6 @@
 # 贡献指南
 
-谢谢你有兴趣改进 `dsh-subagent-tree`。
+谢谢你有兴趣改进 `dsh-router-worker`。
 
 ## 仓库结构
 
@@ -53,7 +53,7 @@ npm pack --dry-run       # 检查将进入 tarball 的文件清单
 ## 装进自己的 DSH 试
 
 ```bash
-dsh plugin --profile <profile> add /path/to/dsh-subagent-tree
+dsh plugin --profile <profile> add /path/to/dsh-router-worker
 ```
 
 或者在插件管理器里 `install_bundle` 指向这个目录。改了宿主半（`lib/index.js`、
@@ -72,7 +72,7 @@ dsh plugin --profile <profile> add /path/to/dsh-subagent-tree
 
 请用 `.github/ISSUE_TEMPLATE/` 里的模板。最有用的三样东西：DSH 版本、是否装了
 自定义皮肤（尤其 `dsh-claude-style`）、以及 `~/.dsh/logs/desktop-next.log` 里
-含 `dsh-subagent-tree` / `ROUTER-` 的行。
+含 `dsh-router-worker` / `ROUTER-` 的行。
 
 ## 许可
 

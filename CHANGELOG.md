@@ -59,7 +59,7 @@
 ### 设置页（Router 项目经理）
 
 - `lib/client.js` 新增设置导航一级页「Router 项目经理」（`settings.section` id
-  `subagent-tree`，order 20）。三张卡：①运行限制（改宿主 `subagent.maxActiveSubagents`
+  `router-worker`，order 20）。三张卡：①运行限制（改宿主 `subagent.maxActiveSubagents`
   / `maxDepth`，与 Multitask 设置页同一份配置）；②四类 worker 的模型覆盖
   （`subagentModels`，留空＝继承协调者，保存走 `form.mutate`，不重启插件）；
   ③运行时与验证（只读显示 sqlite 路径、Watchdog 阈值、该看哪几行日志）。
@@ -85,7 +85,7 @@
 
 - **数据通道**：工单表在宿主进程的 sqlite 里，侧栏树在 renderer 进程，不能直读。
   宿主半用 `ctx.inject(['webServer'], cb)` 另开子 fiber（不改顶层 `inject=[]`），
-  `webCtx.effect` 里注册 exact GET 路由 `/plugins/dsh-subagent-tree/tickets`，
+  `webCtx.effect` 里注册 exact GET 路由 `/plugins/dsh-router-worker/tickets`，
   只外露 `queued|running` 工单的非敏感字段（**不吐** brief/result/error/
   worker_session/parent_request），配 `connection.requestRejection` 守卫。
   客户端 URL 相对 `document.baseURI` 解析（照 dsh-better-sidebar 的 `hostRouteUrl`
@@ -164,7 +164,7 @@ macOS、无 docker/podman，Electron GUI 与 Windows ACL 冒烟无法在 CI 跑�
   决定保活还是标 `failed: session lost on restart`；宿主没就绪时标 `orphaned`
   而不是猜（猜成 failed 会让用户去重跑一个其实还活着的活）。恢复完成后才允许泵派活，
   避免把活着的工单重复派一遍。
-- 运行时句柄通过 `Symbol.for('dsh-subagent-tree.router-runtime')` 登记到
+- 运行时句柄通过 `Symbol.for('dsh-router-worker.router-runtime')` 登记到
   `globalThis`，因为宿主半与 preset 半是两个 cordis context（详见 `lib/runtime.js`）。
 
 ### Phase 1 — Router 语义

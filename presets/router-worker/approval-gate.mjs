@@ -215,7 +215,7 @@
  *   - 不碰非委派的（协调者 / 用户）会话；不动**子代理自己的**委派策略以外的任何东西；
  *   - 父会话策略不是 `ask` 时**什么都不做**。
  *
- * @module dsh-subagent-tree/presets/router-worker/approval-gate
+ * @module dsh-router-worker/presets/router-worker/approval-gate
  */
 
 /** Cordis 插件名，用于 loader 诊断。 */
@@ -398,7 +398,7 @@ function warnOnceFactory(ctx) {
     if (seen.has(message)) return
     seen.add(message)
     try {
-      ctx.logger?.warn?.(`dsh-subagent-tree/approval-gate: ${message}`)
+      ctx.logger?.warn?.(`dsh-router-worker/approval-gate: ${message}`)
     } catch {
       // 日志通道不可用不能反过来炸掉会话。
     }
@@ -1078,7 +1078,7 @@ export function apply(ctx, config) {
     warn(`${detail} [ROUTER-APPROVAL-GATE-SKIPPED reason=${reason}]`)
     try {
       ctx.logger?.info?.(
-        `dsh-subagent-tree: ROUTER-APPROVAL-GATE-SKIPPED reason=${reason} count=${count}`,
+        `dsh-router-worker: ROUTER-APPROVAL-GATE-SKIPPED reason=${reason} count=${count}`,
       )
     } catch {
       // 与 warnOnceFactory 同理：日志通道不可用不能反过来炸掉会话。
@@ -1242,7 +1242,7 @@ export function apply(ctx, config) {
 
     try {
       ctx.logger?.info?.(
-        'dsh-subagent-tree: subagent approval policy released to "ask" for one delegated worker; ' +
+        'dsh-router-worker: subagent approval policy released to "ask" for one delegated worker; ' +
           'approval-requiring calls now route to the user [ROUTER-APPROVAL-GATE-ENGAGED]',
       )
     } catch {
@@ -1267,7 +1267,7 @@ export function apply(ctx, config) {
   const noteNotify = (kind, reason, detail) => {
     try {
       ctx.logger?.info?.(
-        `dsh-subagent-tree: ROUTER-APPROVAL-NOTIFY-${kind}` +
+        `dsh-router-worker: ROUTER-APPROVAL-NOTIFY-${kind}` +
           `${reason === undefined ? '' : ` reason=${reason}`}` +
           `${detail === undefined ? '' : ` — ${detail}`}`,
       )
@@ -1428,7 +1428,7 @@ export function apply(ctx, config) {
         // 反过来说：EXP 没装、或用户没选它时，这个判断恒为假，本模块行为与之前完全一样。
         if (config?.yieldToAutoReview !== false && autoReviewActive(ctx, agent.session)) {
           ctx.logger?.info?.(
-            `dsh-subagent-tree: ROUTER-APPROVAL-YIELDED reason=auto-review tool=${JSON.stringify(exec.name)}`,
+            `dsh-router-worker: ROUTER-APPROVAL-YIELDED reason=auto-review tool=${JSON.stringify(exec.name)}`,
           )
           return downstream
         }
@@ -1439,7 +1439,7 @@ export function apply(ctx, config) {
 
         const label = hit.kind === 'shell' ? hit.command : hit.filePath
         ctx.logger?.info?.(
-          `dsh-subagent-tree: ROUTER-APPROVAL-ASK tool=${JSON.stringify(exec.name)} pattern=${hit.pattern}`,
+          `dsh-router-worker: ROUTER-APPROVAL-ASK tool=${JSON.stringify(exec.name)} pattern=${hit.pattern}`,
         )
 
         // ── 把「命令声称的路径」与「它真正指向哪里」一起画在卡上 ────────────────
@@ -1556,7 +1556,7 @@ export function apply(ctx, config) {
     const noteRetry = (kind, reason, detail) => {
       try {
         ctx.logger?.info?.(
-          `dsh-subagent-tree: ROUTER-APPROVAL-RELAY-RETRY-${kind}` +
+          `dsh-router-worker: ROUTER-APPROVAL-RELAY-RETRY-${kind}` +
             `${reason === undefined ? '' : ` reason=${reason}`}` +
             `${detail === undefined ? '' : ` — ${detail}`}`,
         )
@@ -1734,7 +1734,7 @@ export function apply(ctx, config) {
 
           try {
             ctx.logger?.info?.(
-              `dsh-subagent-tree: ROUTER-APPROVAL-RELAYED tool=${JSON.stringify(toolName)} outcome=${String(outcome)}`,
+              `dsh-router-worker: ROUTER-APPROVAL-RELAYED tool=${JSON.stringify(toolName)} outcome=${String(outcome)}`,
             )
           } catch {
             // 日志通道不可用不能反过来炸掉审批。
@@ -1746,7 +1746,7 @@ export function apply(ctx, config) {
           // 不能因为转呈不了就把一次拒绝变成放行。
           try {
             ctx.logger?.info?.(
-              `dsh-subagent-tree: ROUTER-APPROVAL-RELAY-FAILED reason=${error instanceof Error ? error.message : String(error)}`,
+              `dsh-router-worker: ROUTER-APPROVAL-RELAY-FAILED reason=${error instanceof Error ? error.message : String(error)}`,
             )
           } catch {
             // 同上。

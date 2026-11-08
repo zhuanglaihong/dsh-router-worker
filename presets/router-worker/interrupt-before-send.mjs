@@ -105,7 +105,7 @@
  * 那会把「纠错稍晚」变成「纠错根本没发出去」，方向正好反了。所以任何失败都只是
  * 记一条带固定标识的 info，然后照常 `next()`。
  *
- * @module dsh-subagent-tree/presets/router-worker/interrupt-before-send
+ * @module dsh-router-worker/presets/router-worker/interrupt-before-send
  */
 
 /** Cordis 插件名，用于 loader 诊断。 */
@@ -169,7 +169,7 @@ function warnOnceFactory(ctx) {
     if (seen.has(message)) return
     seen.add(message)
     try {
-      ctx.logger?.warn?.(`dsh-subagent-tree/interrupt-before-send: ${message}`)
+      ctx.logger?.warn?.(`dsh-router-worker/interrupt-before-send: ${message}`)
     } catch {
       // 日志通道不可用不能反过来炸掉工具调用。
     }
@@ -213,7 +213,7 @@ export function apply(ctx, config) {
   /** 记一条结果（固定标识，便于 grep）。 */
   const note = (kind, detail) => {
     try {
-      ctx.logger?.info?.(`dsh-subagent-tree: ROUTER-STEER-INTERRUPT-${kind}${detail === undefined ? '' : ` ${detail}`}`)
+      ctx.logger?.info?.(`dsh-router-worker: ROUTER-STEER-INTERRUPT-${kind}${detail === undefined ? '' : ` ${detail}`}`)
     } catch {
       // 同上。
     }

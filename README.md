@@ -1,4 +1,4 @@
-# dsh-subagent-tree
+# dsh-router-worker
 
 在 DSH 的左侧会话列表里，把**子代理会话**画成主会话的**缩进子树**：连接线、编号 + 摘要、运行状态。
 
@@ -67,7 +67,7 @@ DSH 标准的会话列表是**平铺**的：主会话和子代理会话混在一
 
 - 状态条是「N 运行中 / M 排队」两个小圆点 chip；**收起时也保留**，等于「一眼看汇总」。
 - 排队工单逐条列一行短名，只显示 `queued|running` 的非敏感字段。
-- 数据来自宿主半开的一个同源 GET 路由（`/plugins/dsh-subagent-tree/tickets`），2.5 秒轮询一次；失败保留旧快照不闪空白，取不到数据时状态条静默不画，子对话树照常。
+- 数据来自宿主半开的一个同源 GET 路由（`/plugins/dsh-router-worker/tickets`），2.5 秒轮询一次；失败保留旧快照不闪空白，取不到数据时状态条静默不画，子对话树照常。
 - 这是**轻量版**：没有独立面板、没有「重试 / 取消」按钮，只是在现有树里补一行 —— 排队项才是真缺口。
 
 渲染截图（在模拟宿主 DOM 的验证页里跑真实 `lib/client.js`；**每栏各画两遍**：左边原生
@@ -116,14 +116,14 @@ DOM 在 13px / 16px 字号下逐像素一致）。三平台 CI 每次都会跑�
 ## 安装
 
 ```bash
-dsh plugin --profile <你的 profile> add /path/to/dsh-subagent-tree
+dsh plugin --profile <你的 profile> add /path/to/dsh-router-worker
 ```
 
 或者在这个仓库里已经装好的 DSH 里，用插件管理器安装这个目录（`install_bundle`），装完**完全退出并重开** DSH NEXT。
 
 ## 配置
 
-设置里有独立的一级页面「**Router 项目经理**」（`settings.section`，id `subagent-tree`）：
+设置里有独立的一级页面「**Router 项目经理**」（`settings.section`，id `router-worker`）：
 
 - **运行限制** —— 直接改宿主的 `subagent.maxActiveSubagents` / `maxDepth`，和 Multitask
   设置页里那两行是同一份配置（改哪个都生效）。
@@ -144,7 +144,7 @@ dsh plugin --profile <你的 profile> add /path/to/dsh-subagent-tree
 
 | 行为 | 默认 | 存在哪 |
 |---|---|---|
-| 默认展开还是收起 | 展开 | `localStorage["dsh-subagent-tree:collapsed"]`，只记被收起的主会话 |
+| 默认展开还是收起 | 展开 | `localStorage["dsh-router-worker:collapsed"]`，只记被收起的主会话 |
 | 摘要截断长度 | 40 字 | 源码 `clip(raw, 40)` |
 | 是否显示侧边对话（`Side: ` 开头） | 不显示 | `childrenOf()` 里的过滤——那不是 agent 派的活 |
 
@@ -169,7 +169,7 @@ Watchdog 不需要单独配置：它随 `runtime` 一起启停，阈值（60 秒
 
 **工单状态条**：工单表在宿主进程的 sqlite 里，renderer 进程读不到全局键，所以宿主半用
 `ctx.inject(['webServer'], cb)` 另开子 fiber 注册 exact GET 路由
-`/plugins/dsh-subagent-tree/tickets`，只外露 `queued|running` 工单的
+`/plugins/dsh-router-worker/tickets`，只外露 `queued|running` 工单的
 `{id, parent, title, status, startedAt}`（**不吐** brief / result / error /
 worker_session）。客户端 URL 相对 `document.baseURI` 解析 —— 用注入的 `streamBaseUrl`
 会跨源被 CORS 拒成 `Failed to fetch`。走子 fiber 而不是把 `webServer` 塞进主
@@ -195,7 +195,7 @@ worker_session）。客户端 URL 相对 `document.baseURI` 解析 —— 用注
 ## 卸载
 
 ```bash
-dsh plugin --profile <profile> remove dsh-subagent-tree
+dsh plugin --profile <profile> remove dsh-router-worker
 ```
 
 卸载时 `install()` 返回的清理函数会移除样式表、所有子行和箭头，宿主列表恢复原样。
