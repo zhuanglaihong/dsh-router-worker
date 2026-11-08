@@ -6,6 +6,48 @@
 
 合并单包：装一次，得到「Router 项目经理模式」+ 侧栏子对话树。
 
+### 侧栏树改为「结构无关」渲染（兼容自定义皮肤 / Claude-style）
+
+用户启用 `dsh-claude-style` 后侧栏树整块错位（主行变空灰条、子行与连接线断成两截）。
+根因不是颜色而是 **DOM 结构**：该皮肤的 `dateGroups` 把每个会话行包进一层 `box`
+（`box = row.parentElement`），用 `appendChild(box)` 按日期整体搬动、用
+`box.style.display="none"` 整体隐藏、在 box 间插日期标题、往 row 里插 date-chip。
+原生结构是 `list > row`，它是 `list > box > row`。
+
+旧实现三处假设崩塌，逐一修掉：
+
+| 旧假设 | 现在 |
+|---|---|
+| 子树 `insertAdjacentElement("afterend")` 紧跟 row；在 boxed 结构里掉进 box 内部被重排逻辑当杂项丢弃 | `attachHolder()` 仍紧跟 row，但 `holdersAligned()` 要求 `holder.parentElement === row.parentElement`，皮肤重建 DOM 时强制重挂。子树作为 box 的子节点，随 box 一起搬、一起藏 |
+| 往主行里塞绝对定位箭头、改 `paddingInlineStart` / 标题 `marginInlineStart`；皮肤插 chip 后标题被推没 | **宿主行一个字节都不动**（删掉 `placeToggle` / `pushTitle` / `clearToggleHost` 整族）。箭头、控制行、状态条、子行全部画在自己的子树块里；`▾ N 条子对话` 是子树第一行 |
+| CSS 写死 `left:48px` / `padding-left:64px` | 缩进按主题字号算：`--sat-line = 4 × --dsw-font-size-sm`、`--sat-indent = 6 × --dsw-font-size-sm`，颜色全取 `--dsw-alias-*`。13px 字号 52/78px，16px 字号 64/96px |
+
+「兼容其余 style」不是逐个皮肤写适配，而是**去掉所有对结构的假设**：只认业务属性
+`data-row-key`、不改宿主行、子树挂在父行所在容器里、尺寸从主题变量推导。
+
+- `test/sidebar-structure.test.mjs`：3 个零依赖单测，vm 驱动真实 `lib/client.js`，
+  同时模拟原生 `list > row` 与 claude-style `list > box > row` 并复现 box 重排，断言
+  宿主行始终干净、子树始终与父行同容器、重排后仍连着文档。
+- 验证：`/tmp/style-probe.mjs` PASS；headless Chrome CDP 几何在原生 / boxed ×
+  13px / 16px 字号下逐像素一致；沙盒真宿主 CDP 零 console / exception / netfail。
+
+### 发布准备：provider 契约决策 + 标准仓库组织
+
+- **移除「私有 provider 收敛成官方 `spawn`」这条硬要求**：核对宿主契约后确认收敛会
+  破坏功能。`startActivation(spec)` 把 `spec.provider` 原样写进 `subagent/descriptor`，
+  而 `worker-persona.mjs` / `subagent-mode.mjs` / `minimal-guard.mjs` 都以这个字符串
+  作为四类 worker 的唯一路由键；两个私有 provider 只是「与上游 in-process spawn
+  同形」的别名，不是另造执行引擎。改为**固化契约**：`test/providers.test.mjs`
+  7 个用例（provider 名互异、守卫常量逐字一致、capabilities 齐全、重复注册被跳过、
+  抛错只告警）。理由与证据见 [docs/PLATFORM.md](docs/PLATFORM.md)。
+- 真正未完成的发布硬要求只剩一项：**Windows / Linux 真机 GUI / ACL 冒烟**
+  （用户另一台电脑），CI 只覆盖代码层。
+- `scripts.test` 改为 `node --test`（无文件参数，Node 自动发现新测试），CI 的
+  Unit tests 同步为 `npm test`；单测从 29 增至 **39**（四个文件）。
+- 仓库按标准插件仓库组织：`.github/workflows/ci.yml`、`.github/ISSUE_TEMPLATE/`、
+  `CONTRIBUTING.md`、`docs/PLATFORM.md`、`CHANGELOG.md`、`LICENSE`(MIT)、
+  `README.md`、`test/`，`package.json` 带 repository/bugs/homepage/publishConfig。
+
 ### 新增
 
 - **Router 项目经理模式**（preset id `router-worker`）：从 `dsh-multitask` 1.3.3
@@ -57,7 +99,7 @@
   关联丢了。现在只写一次，值就是 parentId。
 - 验证：`/tmp/p3-probe.mjs`（vm 驱动真实 client.js + 假 DOM）确认 p1 显示
   「1 运行中 / 2 排队」+ 三条排队项、p2 只有排队工单也显示、p3 无工单不画、
-  无敏感字段泄漏、POST 405；29/29 单测通过；沙盒真宿主 CDP：`sidebarStyle` /
+  无敏感字段泄漏、POST 405；单测通过（当时 29，现 39）；沙盒真宿主 CDP：`sidebarStyle` /
   `settingsCss` / `barCss` 均注入、renderer 内 `fetch` 拿到 `{"ok":true,"value":[]}`、
   **零 console / exception / netfail**。
 
@@ -73,11 +115,13 @@ macOS、无 docker/podman，Electron GUI 与 Windows ACL 冒烟无法在 CI 跑�
 - `test/platform.test.mjs`：20 个单测 / 75 断言，含「windows 路径逻辑在非 Windows
   主机上被演练」的可模拟性证明，及针对 `approval-gate.mjs:507` 表达式的 oracle 比对。
 - `.github/workflows/ci.yml`：`ubuntu-latest`/`windows-latest`/`macos-latest` 三矩阵
-  × Node 24，跑语法检查（node 写 walker，bash/pwsh 通用）、单测（显式文件列表）、
-  `npm pack --dry-run`；job 注释写明 GUI 冒烟需真机。
+  × Node 24，跑语法检查（node 写 walker，bash/pwsh 通用）、`npm test`（自动发现四个
+  测试文件、39 用例）、`npm pack --dry-run`；job 注释写明 GUI 冒烟需真机。
 - `docs/PLATFORM.md`：四层验证边界 + 发布口径逐字「macOS 真机已验；Windows / Linux
-  通过 CI 代码层验证（语法 + 单测 + 打包），GUI 与 ACL 冒烟待真机」+ 真机冒烟清单。
-- `scripts.test = "node --test test/*.test.mjs"` 自动拾取新单测（现 9 + 20 = 29）。
+  通过 CI 代码层验证（语法 + 单测 + 打包），GUI 与 ACL 冒烟待真机」+ 真机冒烟清单
+  + 「私有 provider 不收敛成 spawn」的宿主契约证据。
+- `scripts.test = "node --test"`（无文件参数，Node 自动发现 `test/*.test.mjs`，以后加测试
+  不会漏跑）；单测现 9 + 20 + 7 + 3 = **39**。
 
 ### Phase 4 — Watchdog（卡死的工单自动收尾）
 

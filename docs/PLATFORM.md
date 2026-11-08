@@ -52,8 +52,13 @@ Win32 安全描述符 API、文件系统 ACL、Electron 窗口与子进程行为
 1. **Syntax check**：一个 `node -e` 内联脚本遍历 `lib/*.js|*.mjs` 与
    `presets/router-worker/*.mjs`，逐个 `node --check`。用 Node 写 walker 而非 shell glob，
    是为了同一条命令在 bash（ubuntu/macos）与 pwsh（windows 默认 shell）上都能跑。
-2. **Unit tests**：`node --test test/watchdog.test.mjs test/platform.test.mjs`——显式列文件，
-   避开 pwsh 与 bash 对 `test/*.test.mjs` glob 展开行为的差异。
+2. **Unit tests**：`npm test`（= `node --test`，无文件参数，由 Node 自己发现
+   `test/*.test.mjs`）——既不依赖 shell 的 glob 展开（pwsh 与 bash 行为不同），也不会漏掉
+   以后新增的测试。共 39 个用例，四个文件：
+   - `watchdog.test.mjs`（9）—— Watchdog 三条巡检规则；
+   - `platform.test.mjs`（20）—— 三平台路径判定（显式 `platform` 参数）；
+   - `providers.test.mjs`（7）—— 四类 worker 的 provider 契约（见下节）；
+   - `sidebar-structure.test.mjs`（3）—— 原生 / claude-style 两种 DOM 下侧栏树不脱节。
 3. **Pack**：`npm pack --dry-run`，打印将进入 tarball 的文件清单（由 `package.json` 的
    `files` 字段决定），确认打包内容。零运行时依赖，无需 pnpm。
 
@@ -62,6 +67,30 @@ Win32 安全描述符 API、文件系统 ACL、Electron 窗口与子进程行为
 
 CI 覆盖面：语法、纯逻辑单测、三平台可模拟性、打包清单。CI 不覆盖：真机安装、GUI、
 ACL 安全描述符、pwsh/bash 工具的真实启用与执行、子代理真实写文件。
+
+---
+
+## 关于「把私有 provider 收敛成官方 spawn」的决策
+
+早期清单里写过一条发布硬要求：「把 `router_worker_ptc` / `router_worker_minimal` 收敛成
+官方 `spawn` provider」。**核对宿主契约后，这条已从硬要求里移除**——收敛会直接破坏功能：
+
+- 宿主的 `startActivation(spec)` 把 `spec.provider` **原样**写进
+  `subagent/descriptor`（`snapshotSubagentDescriptor({provider: spec.provider, ...})`），
+  而 `worker-persona.mjs` 的 `personaForChild()`、`subagent-mode.mjs` 的 `modeForChild()`、
+  `minimal-guard.mjs` 都以这个字符串作为四类 worker 的**唯一路由键**。改成 `spawn` 会让
+  PTC / minimal 人格与只读工具面静默塌缩成普通 worker。
+- 两个私有 provider 并不是另造执行引擎：`lib/worker-providers.js` 的
+  `InProcessSpawnProvider` 与上游 in-process spawn **同形**（`inheritsParentContext: false`、
+  四项 `capabilities` 齐全、`prepareContinuable()` 返回空 seed），只是注册了两个别名，
+  让「每类 worker 一个可辨认的名字」成立。`assertCapabilities()` 的契约已满足。
+- `DUPLICATE_PROVIDER` 风险由 `registerWorkerProviders()` 里 `getProvider(name)` 查重挡住；
+  `registerProvider` 抛错也只告警、不抛穿宿主启动。
+
+所以发布前真正要守住的是**契约不漂移**，不是改名。`test/providers.test.mjs` 把这条
+契约固化成 7 个用例（provider 名互异且不含 spawn/fork、守卫模块常量与 composition
+逐字一致、capabilities 齐全、重复注册被跳过、抛错只告警）。**真正未完成的发布硬要求
+只有一项：Windows / Linux 真机 GUI / ACL 冒烟**（清单见下），需要用户提供的另一台机器。
 
 ---
 
