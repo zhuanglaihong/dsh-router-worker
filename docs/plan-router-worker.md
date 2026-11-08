@@ -370,3 +370,60 @@ onBoot:
 **包名**：保持 `dsh-subagent-tree`，还是趁远程没建改成 `dsh-superagent` / `dsh-router-worker`？
 
 不改的话我直接按现名推进 Phase 0。
+
+---
+
+## 十、范围调整（m05541 后用户确认，2026-11-08）
+
+用户明确：**只要「第一部分 Router 项目经理模式」+ 子对话显示**；文章其余模块（事件驱动、
+面向人的交互、计算/状态/环境分离）都不要。逐条校准如下。
+
+### 更正两处标错的地方
+
+- **「计算/状态/环境分离」从未实现**。文章该模块指无状态云端循环 + endpoint daemon
+  + BYOM，需要另写一套 Engine。Phase 2 做的只是「工单状态从进程内存挪进 sqlite」，
+  目的是**让 Router 派出去的活不丢单**，不是把 agent 变成无状态循环。两者不要混为一谈。
+- **事件驱动一行未写**。订阅 `session/event` 的 `turn/end` 只是 dispatcher 判断
+  「这个 worker 干完了」的信号；透传 / 投机执行 / Chain of Recall 均未实现。
+
+### 已落地 vs 不做
+
+| 项 | 决定 | 说明 |
+|---|---|---|
+| 双层架构 Router/Worker | ✅ 保留 | Phase 0 模式声明 + Phase 1 中文人格 / 收窄 41 工具 / `ticket_create` / 短名 |
+| 子对话侧栏树 | ✅ 保留 | 用户 m04784「保留子智能体显示的插件」 |
+| Phase 2 store / outbox / dispatcher | ✅ 保留，先实测 | 用户选「保留，先跑测试」；它是**可选底座**，不是文章模块。`config.runtime: false` 可整块关掉，`ticket_create` 退回直接派单 |
+| Phase 3 工单看板 | ✅ 保留 | 用户「我觉得 3 可以保留」；走 `sidebar.panellist`（replaceRisk: none） |
+| Phase 4 Watchdog | ⏸ 暂不做 | 用户问「watchdog 有什么用吗」；见下节，等实测中真出现卡单再补 |
+| Phase 5 三平台验证 + 发布 | ✅ 保留，且为硬要求 | 用户「之后要发布肯定所有平台都要验证」；见下节 |
+| 文章的其余模块 | ❌ 明确不做 | 事件驱动 / 面向人的交互 / 计算状态环境分离 / 权限模型 / 优先级 DAG |
+
+### Watchdog 是干什么的（回答用户提问）
+
+原计划：`ctx.timer.interval(60_000)` 每 60 秒巡检，running 超 15 分钟无进展 →
+`subagents.interrupt` + 标 `failed`；queued 超 30 分钟标黄；outbox 重试超 10 次标红。
+
+它补的是**唯一一个缺口**：worker 没崩、没发 `turn/end`、但也不再产出（网络挂起、
+模型卡死、进程僵住），此时 `session/event` 和 `agent/disposed` 都不会来，工单会永远挂在
+running。文章里它是「持久自愈」的一部分，服务于长时间无人值守。
+
+但本插件现在的定位是**有人在场看着的 Router 项目经理模式**，且 Phase 2 已经覆盖了最常见的
+两类异常：重启后 `recoverOnBoot` 把失联的 running 标失败、正常结束由 `turn/end` 判成功。
+所以 Watchdog 属于「以后真遇到挂单再加」的锦上添花，约 0.5 天工作量，**先不做**。
+
+### 三平台验证（发布硬要求，诚实边界）
+
+本机只有 macOS，且无 Docker / podman / gh。分层验证：
+
+1. **纯 Node 代码层（可全自动，三平台等价）** — 新增 `test/` 下零依赖脚本，
+   覆盖 store / outbox / dispatcher / `approval-gate` 的路径判定（`caseInsensitive`
+   参数可在一台机器上同时模拟 win32 与 POSIX 语义）；配一份 GitHub Actions
+   `ubuntu-latest / windows-latest / macos-latest` 矩阵跑 `node --check` + 单测 +
+   `pnpm pack` 完整性。这一步能证明**逻辑**在三平台一致。
+2. **Electron GUI 层（需真机）** — 预设激活、侧栏渲染、主题兼容，只能在
+   Windows / Linux 真机上由用户提供机器验收；CI 跑不了无头 Electron 的完整 GUI。
+   发布说明里如实写「已在 macOS 真机验证，Win/Linux 通过 CI 代码层验证」。
+
+平台相关代码集中在 `presets/router-worker/workspace-acl.mjs`（`IS_WINDOWS`）、
+`approval-gate.mjs`（win32 路径与大小写）、`composition.mjs:1119-1124`（按 platform
+启停 `tool-pwsh` / `tool-bash` 行）。这三处是 CI 之外仍需真机确认的重点。
