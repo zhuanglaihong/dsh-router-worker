@@ -14,6 +14,27 @@
 - 两类自建 worker 后端 `router_worker_ptc` / `router_worker_minimal` 由本包
   宿主半注册。
 
+### 设置页（Router 项目经理）
+
+- `lib/client.js` 新增设置导航一级页「Router 项目经理」（`settings.section` id
+  `subagent-tree`，order 20）。三张卡：①运行限制（改宿主 `subagent.maxActiveSubagents`
+  / `maxDepth`，与 Multitask 设置页同一份配置）；②四类 worker 的模型覆盖
+  （`subagentModels`，留空＝继承协调者，保存走 `form.mutate`，不重启插件）；
+  ③运行时与验证（只读显示 sqlite 路径、Watchdog 阈值、该看哪几行日志）。
+- **设置页走独立 fiber**：`mountSettings(ctx)` 用
+  `ctx.inject(["slots","locale","configForms"], cb)` 另开一个子 fiber 等服务，
+  绝不把这些服务塞进侧栏树那根 fiber 的 `inject`（那样任一服务缺席会把整个
+  client bundle 拖到 PENDING，连子对话树都不显示）。`react` 的 `require`
+  也包了 try/catch —— 种子表里没有 react 时只跳过设置页，不重现 0.1.0
+  那种启动失败。模型目录用宽松的 `ctx.get("remote")` 取，取不到降级不崩。
+- `runtime` / `stateDir` 刻意**不放进设置页**：它们不是 `Config` 里的 volatile
+  字段，从面板写会让整份配置变更被判成非 volatile、重启本插件；仍走
+  `cordis.patch.yml` 的 `config` 块。
+- 验证：`/tmp/sat-probe.mjs`（vm 驱动真实 client.js）确认两个 effect 不变、
+  设置 fiber 独立注册、页面可渲染、save 写回；`node --test test/*.test.mjs` 9/9 无回归；
+  沙盒 CDP 真宿主激活：`sidebarStyle:true`、`settingsCss:true`、零 console /
+  exception / netfail。
+
 ### Phase 4 — Watchdog（卡死的工单自动收尾）
 
 - **补第三类异常**：`turn/end` 盖正常结束、`recoverOnBoot` 盖进程重启，剩下的空格是

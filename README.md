@@ -71,7 +71,24 @@ dsh plugin --profile <你的 profile> add /path/to/dsh-subagent-tree
 
 ## 配置
 
-没有必须配的项。两个开关在实现里已经做成默认值：
+设置里有独立的一级页面「**Router 项目经理**」（`settings.section`，id `subagent-tree`）：
+
+- **运行限制** —— 直接改宿主的 `subagent.maxActiveSubagents` / `maxDepth`，和 Multitask
+  设置页里那两行是同一份配置（改哪个都生效）。
+- **子代理使用的模型** —— 给四类 worker（`subagent` / `subagent_fork` / `subagent_ptc` /
+  `subagent_minimal`）分别指定 provider + model，留「继承协调者」则不覆盖。这是本包
+  `subagentModels` 字段，保存后立即生效、不重启插件。
+- **运行时与验证** —— 只读地显示 sqlite 落地路径、Watchdog 三档阈值，以及重启后该看
+  哪几行日志，方便核对而不必翻源码。
+
+页面走一个**独立的延迟 fiber**（`ctx.inject(["slots","locale","configForms"], …)`）：
+万一这些服务没就绪，只影响设置页，侧栏子对话树照常加载。模型目录取不到时下拉框降级
+成「目录不可用」，不会让整页崩掉。
+
+`runtime` / `stateDir` 这两个调度层开关没有进设置页：它们不是 volatile 字段，从面板写会
+触发整份配置重载、把插件重启一次。仍在 profile 的 `cordis.patch.yml` 里改（下表）。
+
+没有必须配的项。两个显示开关在实现里已经做成默认值：
 
 | 行为 | 默认 | 存在哪 |
 |---|---|---|
