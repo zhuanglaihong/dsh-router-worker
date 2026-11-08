@@ -85,6 +85,16 @@ const WORKER_TYPES = ['subagent', 'subagent_minimal', 'subagent_ptc', 'subagent_
 const TITLE_MIN = 2
 const TITLE_MAX = 40
 
+/**
+ * Router 运行时在 `globalThis` 上的键。
+ *
+ * ⚠️ 必须与 `lib/runtime.js` 的 `RUNTIME_KEY` **逐字一致**（同一个
+ * `Symbol.for` 描述符）。这里不 import 那个文件，理由同上面的 `WORKER_PROVIDERS`：
+ * 本目录守「子模块零相对 import」的约定。`Symbol.for` 走的是全局符号注册表，
+ * 同一个字符串在任何模块实例里都解析成同一个符号，所以两边不必共享代码。
+ */
+const ROUTER_RUNTIME_KEY = Symbol.for('dsh-subagent-tree.router-runtime')
+
 const PARAMETERS = {
   type: 'object',
   additionalProperties: false,
@@ -215,12 +225,39 @@ export function apply(ctx, config) {
   const warn = warnOnceFactory(ctx)
 
   /**
-   * Phase 1 的工单表：进程内、只增不减。
+   * Router 运行时句柄（工单表 + 派单泵 + 结果投递）。
    *
-   * Phase 2 换成 `node:sqlite` 之后这张 Map 会被删掉，所以现在**不导出**它，
-   * 也不给任何读取路径 —— 否则模型会开始依赖一个必然消失的东西。
+   * 它装在宿主平面（`lib/runtime.js`），本模块在 preset 内部 —— 两个不同的 cordis
+   * context，服务可见性要顺挂载树传下来，而 preset 的 plugins 由注册表在自己的
+   * 挂载点上组装，那条路不一定是本 ctx 的后代。所以两边约定了一个**进程级**
+   * `Symbol.for` 键（`RUNTIME_KEY`），不受挂载树与 `?v=N` 缓存键影响。
+   *
+   * 拿不到不是错误：宿主没装运行时（老版本、或被 `runtime: false` 关掉）时，
+   * `createTicket` 会退回「直接 startActivation」的老行为。
+   *
+   * @returns 运行时句柄，或 undefined。
    */
-  const tickets = new Map()
+  const runtimeOf = () => {
+    const handle = globalThis[ROUTER_RUNTIME_KEY]
+    if (handle === undefined || handle === null) return undefined
+    return typeof handle === 'object' ? handle : undefined
+  }
+
+  /**
+   * 取父会话 id。工单表按它分组，恢复时也用它找 `subagents.listChildren`。
+   *
+   * 形状在不同版本里略有差异（`agent.session.id` / `agent.session.header.id`），
+   * 所以逐层试；取不到时返回 undefined，工单照常入队，只是不会按会话分组。
+   *
+   * @param agent - 调用本工具的 Agent。
+   * @returns 会话 id，或 undefined。
+   */
+  const sessionIdOf = (agent) => {
+    for (const candidate of [agent?.session?.id, agent?.session?.header?.id, agent?.sessionId]) {
+      if (typeof candidate === 'string' && candidate !== '') return candidate
+    }
+    return undefined
+  }
 
   /**
    * 取子代理服务。
@@ -295,6 +332,41 @@ export function apply(ctx, config) {
       // 读不到 name 表就交给 startActivation 去判：它会给出真实的失败原因。
     }
 
+    // ── 首选：交给 Router 运行时入队 ─────────────────────────────────────────
+    //
+    // 运行时装在宿主平面（`lib/runtime.js`），本模块在 preset 内部的另一个
+    // context 里，拿不到它的服务，只能走进程级全局键 —— 那里的长注释解释了为什么
+    // `ctx.provide` 在这里不可靠。
+    //
+    // 走运行时的好处是「入队」与「派发」分开：撞上宿主名额时工单留在队列里，
+    // 名额腾出来后由泵补派；进程重启后 `recoverOnBoot` 会把断掉的接上。
+    // Phase 1 那种「直接 startActivation、撞名额就整张判死」的行为不再出现。
+    const runtime = runtimeOf()
+    if (runtime !== undefined && typeof runtime.enqueue === 'function') {
+      try {
+        const parentSession = sessionIdOf(parent)
+        const queued = runtime.enqueue({
+          title,
+          brief,
+          worker: workerType,
+          parentSession,
+          parentRequest: typeof exec?.requestId === 'string' ? exec.requestId : undefined,
+        })
+        ctx.logger?.info?.(
+          `dsh-subagent-tree: ticket "${title}" (${workerType}) queued as ${queued.ticketId} [TICKET-CREATE-QUEUED]`,
+        )
+        return {
+          ok: true,
+          ticketId: queued.ticketId,
+          message: `Opened ticket "${title}" (${workerType}); it will start as soon as a worker slot is free.`,
+        }
+      } catch (error) {
+        // 入队都失败了说明工单表坏了；退回直接派发至少还能把活干完。
+        const message = error instanceof Error ? error.message : String(error)
+        warn(`queueing ticket "${title}" failed, falling back to a direct dispatch: ${message}`)
+      }
+    }
+
     // 与上游 `tool-subagent` 同形：可选字段只在有值时才写进去，避免用显式的 undefined
     // 顶掉后端默认值。
     const request = {
@@ -323,13 +395,6 @@ export function apply(ctx, config) {
       if (subagentId === undefined) {
         return { ok: false, message: `Dispatching ticket "${title}" returned no subagent id.` }
       }
-      tickets.set(ticketId, {
-        id: ticketId,
-        title,
-        worker: workerType,
-        subagentId,
-        createdAt: Date.now(),
-      })
       ctx.logger?.info?.(
         `dsh-subagent-tree: ticket "${title}" (${workerType}) dispatched as subagent ${subagentId} [TICKET-CREATE-STARTED]`,
       )

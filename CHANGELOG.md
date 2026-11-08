@@ -14,6 +14,29 @@
 - 两类自建 worker 后端 `router_worker_ptc` / `router_worker_minimal` 由本包
   宿主半注册。
 
+### Phase 2 — 工单持久化、队列与结果回流
+
+- **工单落到 sqlite**（`lib/store.js`）：`$DSH_HOME/state/router-worker/tickets.db`，
+  WAL、单写连接、20 条预编译语句。`node:sqlite` 打不开时自动降级为内存表并告警，
+  功能全在、只是重启即失忆 —— 不会让插件装不上。
+- **`ticket_create` 从「直接派发」改成「先入队」**：工具只落库就返回，
+  派发交给 `lib/dispatcher.js` 的泵。宿主原文是「Admission does not queue」，
+  所以撞上 `subagent.maxActiveSubagents` 时**不再把工单判死**，留在队列里等名额。
+- **派单泵不自己算名额**，只对宿主的拒绝作反应（认 `ACTIVATION_LIMIT_REACHED` /
+  `subagent/delivery-unavailable` 两个码）。理由：宿主的计数口径把不到
+  （含别的插件派的活、process-local、每次重新采样），自建预算等于维护第二本账。
+- **结果回流走 outbox**（`lib/outbox.js`）：`turn/end` 时把结论落一张通知表，
+  由投递泵用 `sessions.prompt(..., 'queue')` 送回父会话。退避 1s→5s→30s→5min，
+  10 次投不出去标记 dead 并告警。**重启后 pending 继续投**。
+  刻意用 `queue` 不用 `steer`：退避几分钟后送到的通知若插进届时正在跑的那一步，
+  与那一步无关，插进去就是捣乱。
+- **启动恢复 `recoverOnBoot()`**：`running` 的工单查 `subagents.listChildren(parent)`
+  决定保活还是标 `failed: session lost on restart`；宿主没就绪时标 `orphaned`
+  而不是猜（猜成 failed 会让用户去重跑一个其实还活着的活）。恢复完成后才允许泵派活，
+  避免把活着的工单重复派一遍。
+- 运行时句柄通过 `Symbol.for('dsh-subagent-tree.router-runtime')` 登记到
+  `globalThis`，因为宿主半与 preset 半是两个 cordis context（详见 `lib/runtime.js`）。
+
 ### Phase 1 — Router 语义
 
 - **五份人格全部中文化**（协调者 + 四类 worker），并把「减震器」换成「项目经理」
