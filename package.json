@@ -31,15 +31,15 @@
     "orchestration"
   ],
   "license": "MIT",
-  "author": "lighthope",
+  "author": "zhuanglaihong",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lighthope/dsh-router-worker.git"
+    "url": "git+https://github.com/zhuanglaihong/dsh-router-worker.git"
   },
   "bugs": {
-    "url": "https://github.com/lighthope/dsh-router-worker/issues"
+    "url": "https://github.com/zhuanglaihong/dsh-router-worker/issues"
   },
-  "homepage": "https://github.com/lighthope/dsh-router-worker#readme",
+  "homepage": "https://github.com/zhuanglaihong/dsh-router-worker#readme",
   "publishConfig": {
     "access": "public"
   },

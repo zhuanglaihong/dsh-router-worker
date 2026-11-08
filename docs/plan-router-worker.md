@@ -27,7 +27,7 @@
 
 ### 包名与仓库身份（**需你一句话拍板**）
 
-- **现状**：包名 `dsh-router-worker`，`package.json` 里 repository 指向 `github.com/lighthope/dsh-router-worker`，**远程仓库还没建**。
+- **现状**：包名 `dsh-router-worker`，`package.json` 里 repository 指向 `github.com/zhuanglaihong/dsh-router-worker`，**远程仓库已建**（https://github.com/zhuanglaihong/dsh-router-worker）。
 - **问题**：0.2.0 之后它的主要能力是调度，不再是「一棵树」，名字偏了。
 - **我的建议**：既然远程还没建，现在改名成本接近零。候选：
   - `dsh-superagent`（最贴目标，但易与官方原型混淆）
