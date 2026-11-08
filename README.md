@@ -47,6 +47,21 @@ DSH 标准的会话列表是**平铺**的：主会话和子代理会话混在一
 ▸ ◈ 面试复盘                            2026-11-07   18:28
 ```
 
+**排队中的工单也能看见**（轻量版状态条）。原来的树只读「已存在的子会话」，而一张还在排队、没派出去的工单没有子会话，会整个消失。0.2.0 起在主行下面内联一条汇总：
+
+```
+▾ ◈ 面试复盘                            2026-11-08   18:28
+    ● 2 运行中   ● 1 排队
+    排队：梳理变更要点
+    ├ ● #1 核对版本号一致性                        运行中
+    └ ● #2 统计预设目录规模                        运行中
+```
+
+- 状态条是「N 运行中 / M 排队」两个小圆点 chip；**收起时也保留**，等于「一眼看汇总」。
+- 排队工单逐条列一行短名，只显示 `queued|running` 的非敏感字段。
+- 数据来自宿主半开的一个同源 GET 路由（`/plugins/dsh-subagent-tree/tickets`），2.5 秒轮询一次；失败保留旧快照不闪空白，取不到数据时状态条静默不画，子对话树照常。
+- 这是**轻量版**：没有独立面板、没有「重试 / 取消」按钮，只是在现有树里补一行 —— 排队项才是真缺口。
+
 渲染截图（在模拟宿主 DOM 的验证页里跑真实 `lib/client.js`）：
 
 | 展开 | 收起 |
@@ -107,11 +122,21 @@ Watchdog 不需要单独配置：它随 `runtime` 一起启停，阈值（60 秒
 
 ## 它怎么拿到数据的
 
-只用宿主已有的两个事实，不额外开服务：
+两路数据：显示树用宿主已有的会话快照；工单状态条用本包宿主半开的一个同源 HTTP 路由（见下）。
 
-1. **父子关系** —— `ctx.sessions.list.getSnapshot().byId` 里每个会话摘要都带 `origin: 'subagent'` 和 `parentId`。这是宿主的持久字段，与哪个插件派的活无关，所以本插件对 Multitask **零依赖**。
+**会话树**（对 Multitask 零依赖）:
+
+1. **父子关系** —— `ctx.sessions.list.getSnapshot().byId` 里每个会话摘要都带 `origin: 'subagent'` 和 `parentId`。这是宿主的持久字段，与哪个插件派的活无关。
 2. **短名** —— 同一份快照里的 `projectionsBySession[parentId].values.subagentCatalog[].label`，就是主智能体派单时写下的那行短描述（`subagent` 工具的 `description` 参数）。没有它才退回 `displayTitle`。
 3. **运行状态** —— 同一份摘要上的 `running`；有 `useSessionStatus` 时以它为准。更细的过程文本走宿主的 `subagents.live` 路由（右侧任务管理面板用的就是它）。
+
+**工单状态条**：工单表在宿主进程的 sqlite 里，renderer 进程读不到全局键，所以宿主半用
+`ctx.inject(['webServer'], cb)` 另开子 fiber 注册 exact GET 路由
+`/plugins/dsh-subagent-tree/tickets`，只外露 `queued|running` 工单的
+`{id, parent, title, status, startedAt}`（**不吐** brief / result / error /
+worker_session）。客户端 URL 相对 `document.baseURI` 解析 —— 用注入的 `streamBaseUrl`
+会跨源被 CORS 拒成 `Failed to fetch`。走子 fiber 而不是把 `webServer` 塞进主
+`inject`，是为了服务缺席时只影响状态条、不拖垮整棵会话树。
 
 ## 它怎么打开子对话
 
@@ -167,4 +192,27 @@ MIT
 | 在别的模式里写进提示词 | 自己的 preset 里加一句「遇到可并行的子任务就派子代理，派单时写好 `description`」 | 只是提示词，模型可以不照做 |
 
 第三种里的 `description`（`subagent` 等委派工具的可选参数，3–5 个词）就是侧栏那一行短名。自带的 Router 模式用 `ticket_create` 把这件事变成**必填**，所以那边不需要靠提示词自觉。
+
+## 三平台（Windows / macOS / Linux）
+
+纯 Node 逻辑（`store` / `outbox` / `dispatcher` / `watchdog`）和客户端 UI 天然跨平台
+（Electron 吃掉 OS 差异）。真正需要验证的是从 `dsh-multitask` 原样复制来的三处
+显式平台分支：
+
+- `presets/router-worker/workspace-acl.mjs` —— Windows ACL / 安全描述符（最大风险，
+  macOS 上模拟不出 `SetNamedSecurityInfoW failed (Win32 5)`）；
+- `presets/router-worker/approval-gate.mjs` —— win32 大小写不敏感的路径比对；
+- `presets/router-worker/composition.mjs` —— 按平台启停 `tool-pwsh` / `tool-bash`。
+
+`.github/workflows/ci.yml` 在 `ubuntu-latest` / `windows-latest` / `macos-latest`
+× Node 24 三矩阵上跑语法检查、单测、`npm pack --dry-run`；`lib/platform.js` 把这些
+分支抽成可注入 `platform` 参数的纯函数，`test/platform.test.mjs` 让 Windows 路径
+逻辑能在非 Windows runner 上被演练（现共 29 个单测）。`package.json` 要求
+`engines.node >= 24`（`node:sqlite`）；低版本会降级成内存工单表并告警，不崩但不落库。
+
+**诚实边界**：本机只有 macOS。CI 无显示环境、无法复现 Win32 ACL，所以 Electron
+GUI 与 ACL 冒烟只能在真实 Windows / Linux 机器上人工完成 —— 清单在
+[docs/PLATFORM.md](docs/PLATFORM.md)。发布口径按
+「macOS 真机已验；Windows / Linux 通过 CI 代码层验证（语法 + 单测 + 打包），
+GUI 与 ACL 冒烟待真机」写，不夸大。
 

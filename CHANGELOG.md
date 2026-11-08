@@ -35,6 +35,50 @@
   沙盒 CDP 真宿主激活：`sidebarStyle:true`、`settingsCss:true`、零 console /
   exception / netfail。
 
+### Phase 3 — 侧栏树内联工单状态条（轻量版）
+
+用户 m06084 在「独立看板」与「内联状态条」之间选了**轻量版**：不新增面板，
+只在主会话行下面补一条汇总。存在的理由是「排队中的工单」—— 它们还没派出去，
+没有子会话，在原来的侧栏树里**完全看不见**。
+
+- **数据通道**：工单表在宿主进程的 sqlite 里，侧栏树在 renderer 进程，不能直读。
+  宿主半用 `ctx.inject(['webServer'], cb)` 另开子 fiber（不改顶层 `inject=[]`），
+  `webCtx.effect` 里注册 exact GET 路由 `/plugins/dsh-subagent-tree/tickets`，
+  只外露 `queued|running` 工单的非敏感字段（**不吐** brief/result/error/
+  worker_session/parent_request），配 `connection.requestRejection` 守卫。
+  客户端 URL 相对 `document.baseURI` 解析（照 dsh-better-sidebar 的 `hostRouteUrl`
+  写法：用注入的 `streamBaseUrl` 会跨源被 CORS 拒成 "Failed to fetch"）。
+- **渲染**：`render()` 里凡有子对话**或**有活着工单的主行都画；状态条是「N 运行中 /
+  M 排队」chips（收起时也保留＝只看汇总），排队工单逐条列一行标题。轮询 2.5s、
+  失败保留旧快照不闪空白、工单指纹进 `signatureOf()` 让状态变化触发重画。
+  卸载时清 `AbortController` / timer / 新增 DOM 节点。
+- **顺带修一个潜在 bug**：`TREE_ATTR` 与 `ATTR + "-of"` 本是同一字符串，holder 以前
+  连写两次把 parentId 覆盖成了 `"1"` —— CSS 只按「属性存在」匹配所以没出事，但父会话
+  关联丢了。现在只写一次，值就是 parentId。
+- 验证：`/tmp/p3-probe.mjs`（vm 驱动真实 client.js + 假 DOM）确认 p1 显示
+  「1 运行中 / 2 排队」+ 三条排队项、p2 只有排队工单也显示、p3 无工单不画、
+  无敏感字段泄漏、POST 405；29/29 单测通过；沙盒真宿主 CDP：`sidebarStyle` /
+  `settingsCss` / `barCss` 均注入、renderer 内 `fetch` 拿到 `{"ok":true,"value":[]}`、
+  **零 console / exception / netfail**。
+
+### 三平台验证与发布（代码层）
+
+用户 m02931/m05541 要求 Windows / macOS / Linux 都适配。诚实边界：本机只有
+macOS、无 docker/podman，Electron GUI 与 Windows ACL 冒烟无法在 CI 跑。
+
+- `lib/platform.js`：把三处从 multitask 逐字复制的平台分支抽成**可注入 platform
+  参数的纯函数**（`isWindows`/`isCaseInsensitive`/`normalizeSlashes`/`isPathWithin`/
+  `tempRoots`/`shellTools`），不读 `process.platform`，让 Windows 专属路径逻辑能在
+  macOS/Linux runner 上单测。刻意与 upstream 预设分离，保持 upstream diff 干净。
+- `test/platform.test.mjs`：20 个单测 / 75 断言，含「windows 路径逻辑在非 Windows
+  主机上被演练」的可模拟性证明，及针对 `approval-gate.mjs:507` 表达式的 oracle 比对。
+- `.github/workflows/ci.yml`：`ubuntu-latest`/`windows-latest`/`macos-latest` 三矩阵
+  × Node 24，跑语法检查（node 写 walker，bash/pwsh 通用）、单测（显式文件列表）、
+  `npm pack --dry-run`；job 注释写明 GUI 冒烟需真机。
+- `docs/PLATFORM.md`：四层验证边界 + 发布口径逐字「macOS 真机已验；Windows / Linux
+  通过 CI 代码层验证（语法 + 单测 + 打包），GUI 与 ACL 冒烟待真机」+ 真机冒烟清单。
+- `scripts.test = "node --test test/*.test.mjs"` 自动拾取新单测（现 9 + 20 = 29）。
+
 ### Phase 4 — Watchdog（卡死的工单自动收尾）
 
 - **补第三类异常**：`turn/end` 盖正常结束、`recoverOnBoot` 盖进程重启，剩下的空格是

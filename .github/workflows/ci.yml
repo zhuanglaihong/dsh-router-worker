@@ -1,0 +1,49 @@
+# CI (three platforms) —— 三平台「代码层」验证：语法 / 单测 / 打包。
+# Electron GUI 冒烟、以及 Windows ACL / 安全描述符冒烟无法在 CI 运行：runner 没有
+# 显示环境、没有真实 Electron 会话，也复现不了 Win32 安全描述符 API。这些必须在
+# 真实 Windows / Linux 机器上人工完成（清单见 docs/PLATFORM.md）。
+
+name: CI (three platforms)
+
+# 用引号包住 "on"：部分 YAML 1.1 解析器会把裸 on 当成布尔 true，引号可保证跨解析器无歧义。
+"on":
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    # 注：Electron GUI 冒烟测试无法在 CI（无显示 / 无 Electron 会话 / 无法复现 Win32 ACL）运行，
+    # 必须在真实 Windows 与 Linux 机器上完成；本 job 只负责代码层验证。
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [24]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      # 语法检查：让 node 自己遍历 lib/ 与 presets/router-worker/，逐个 spawn
+      # `node --check <file>`（process.execPath 保证用的是当前 matrix 的 node 24）。
+      # 用 node 写 walker 而不是 shell glob，是为了同一条命令在 bash (ubuntu/macos)
+      # 与 pwsh (windows 默认 shell) 上都能跑。JS 内所有字符串都用单引号，且刻意
+      # 不含 $ / 反引号 / 反斜杠 / 双引号，避免被 pwsh 或 YAML 二次解释；目录用
+      # 正斜杠，Node 在 Windows 上同样接受。
+      - name: Syntax check
+        run: "node -e \"const fs=require('node:fs');const cp=require('node:child_process');let n=0;for(const d of ['lib','presets/router-worker']){for(const f of fs.readdirSync(d)){const ok=f.endsWith('.js')||f.endsWith('.mjs');if(ok){const p=d+'/'+f;cp.execFileSync(process.execPath,['--check',p],{stdio:'inherit'});console.log('OK '+p);n=n+1;}}}console.log('checked '+n+' files');if(n===0){console.error('no files found');process.exit(1);}\""
+
+      # 单测：显式列出两个测试文件，不依赖 shell 对 test/*.test.mjs 的 glob 展开
+      # （pwsh 与 bash 的展开行为不同，显式列举最稳）。new 的测试文件会被加入此处。
+      - name: Unit tests
+        run: node --test test/watchdog.test.mjs test/platform.test.mjs
+
+      # 打包：零运行时依赖，npm 即可（无需 pnpm setup）。--dry-run 会打印将要进入
+      # tarball 的文件清单（由 package.json 的 files 字段决定），据此确认打包内容。
+      - name: Pack
+        run: npm pack --dry-run
