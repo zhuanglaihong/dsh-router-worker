@@ -2,9 +2,11 @@
 
 本包两个版本线：`0.1.x` 只有侧栏显示；`0.2.x` 起把 Router/Worker 调度合并进来。
 
-## 0.2.0 — 进行中
+## 0.2.0 — 2026-11-09
 
-合并单包：装一次，得到「Router 项目经理模式」+ 侧栏子对话树。
+首个 npm 发布版本。装一次，得到「Router 项目经理模式」+ 侧栏子对话树。
+
+> 注意：0.2.0 的 README 示例里用了真实项目名，已由 0.2.1 替换。请装 0.2.1。
 
 ### 发布准备：market 条目 + Release 工作流 + peer 范围修复
 
@@ -23,7 +25,7 @@
   挂到 GitHub Release。资产名固定为**不带版本号**的 `dsh-router-worker.tgz` ——
   `releases/latest/download/<文件名>` 里的文件名是照字面取的，带版本号会下次发版就 404。
 - `README.md` 的「安装」从一条本地路径扩成四条（GitHub 源码 / 预构建 tarball /
-  本地 clone / 插件管理器），并注明 npm 上暂时还没有本包。
+  本地 clone / 插件管理器）。
 
 ### 侧栏树改为「结构无关」渲染（兼容自定义皮肤 / Claude-style）
 
@@ -222,3 +224,15 @@ macOS、无 docker/podman，Electron GUI 与 Windows ACL 冒烟无法在 CI 跑�
 - 只显示最近 3 条，更早的收成「还有 N 条更早的子对话」
 - 跨主题：只锚定 `data-row-key` 业务属性，颜色全用 `--dsw-alias-*` 语义变量
 - 不依赖任何 agent 模式：只读宿主原生 `origin === 'subagent'` + `parentId`
+
+## 0.2.1 — 2026-11-09
+
+文档与隐私修正版，代码行为与 0.2.0 一致（仅清理注释）。
+
+### 文档整理（本版）
+
+- README 的示例数据换成中性项目名（原来用了真实项目名），渲染截图一并重出。
+- README 删除「三平台 / 诚实边界」章节，改为一行「兼容性」+ 指向 `docs/PLATFORM.md`
+  与 `docs/ROADMAP.md`；未完成工作不再出现在面向用户的 README 里。
+- README 安装章节补上 npm 一条，并把 GitHub / tarball / 本地 clone 三条重排。
+- 新增 `docs/ROADMAP.md`：已完成清单、未完成 / 待验证三项、已知缺口、仓库余留。

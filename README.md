@@ -23,14 +23,14 @@ DSH 标准的会话列表是**平铺**的：主会话和子代理会话混在一
 展开：
 
 ```
-  ◈ 面试复盘                            2026-11-07   18:28
+  ◈ 重构计费模块                          2026-11-07   18:28
     ▾ 3 条子对话
-      ├ ● #1 山东云鼎问题书面化                      运行中
-      ├ ● #2 途虎养车问题书面化                      已结束
-      └ ● #3 Draft 山东云鼎科技 doc                  已结束
-  ◈ DeepSeek 超级智能体四特点与实现              2026-11-07   17:02
+      ├ ● #1 拆分价格计算器                          运行中
+      ├ ● #2 补齐单元测试                            已结束
+      └ ● #3 更新接口文档                            已结束
+  ◈ 接入日志网关                          2026-11-07   17:02
     ▾ 1 条子对话
-      └ ● #1 整理四特点对照表                        运行中
+      └ ● #1 核对字段映射                          运行中
 ```
 
 > 注意箭头**不在主行里**：`▾ 3 条子对话` 是子树块自己的第一行（一条控制行），
@@ -39,25 +39,25 @@ DSH 标准的会话列表是**平铺**的：主会话和子代理会话混在一
 子对话很多时，默认只画最近 3 条，更早的折成一行提示（再点一次就全展开）：
 
 ```
-  ◈ 面试复盘                            2026-11-08   18:28
+  ◈ 重构计费模块                          2026-11-08   18:28
     ▾ 6 条子对话
       还有 3 条更早的子对话
-      ├ ● #4 新建友塔游戏复盘                        已结束
-      ├ ● #5 Draft 山东云鼎科技 doc                  已结束
-      └ ● #6 整理三家公司的时间线                    已结束
+      ├ ● #4 迁移历史配置                          已结束
+      ├ ● #5 补充回归用例                          已结束
+      └ ● #6 整理变更说明                          已结束
 ```
 
 收起（主对话之外只留那条控制行）：
 
 ```
-  ◈ 面试复盘                            2026-11-07   18:28
+  ◈ 重构计费模块                          2026-11-07   18:28
     ▸ 3 条子对话
 ```
 
 **排队中的工单也能看见**（轻量版状态条）。原来的树只读「已存在的子会话」，而一张还在排队、没派出去的工单没有子会话，会整个消失。0.2.0 起在主行下面内联一条汇总：
 
 ```
-  ◈ 面试复盘                            2026-11-08   18:28
+  ◈ 重构计费模块                          2026-11-08   18:28
     ▾ 2 条子对话
     ● 2 运行中   ● 1 排队
     排队：梳理变更要点
@@ -79,20 +79,20 @@ DSH 标准的会话列表是**平铺**的：主会话和子代理会话混在一
 
 - **▾ / ▸** 在子树块自己的第一行（「N 条子对话」控制行），**不画在宿主主行里**。点整行收起 / 展开 —— 每个主行单独记状态（localStorage，重开应用还在）；子对话超过 3 条时只显示最近的，更早的折成「还有 N 条更早的子对话」。
 - **#1 / #2** 是编号，按子会话创建时间排。
-- 标题优先取宿主派单时写下的短名（`subagentCatalog[].label`，也就是主智能体给这次派活起的名字，如「山东云鼎问题书面化」），拿不到才退回会话标题，再拿不到才用会话 id 前 8 位。
+- 标题优先取宿主派单时写下的短名（`subagentCatalog[].label`，也就是主智能体给这次派活起的名字，如「拆分价格计算器」），拿不到才退回会话标题，再拿不到才用会话 id 前 8 位。
 - 子行缩进按**主题字号**算，不写死像素：引导线 `--sat-line = 4 × --dsw-font-size-sm`、文字 `--sat-indent = 6 × --dsw-font-size-sm`（13px 字号时分别是 52px / 78px，16px 时 64px / 96px）。换皮肤、换密度都跟着缩放。
 - **●** 的颜色表示状态：运行中是品牌色，已结束是中性色；连接线用 `currentColor` 的淡色版本，任何主题下都协调。
 
 ## 兼容自定义皮肤
 
-2026-11-08 有一个真实的反例：启用 `dsh-claude-style` 后，侧栏树整块错位 —— 主行变成一条空灰条、子行与连接线断成两截。根因**不是颜色**，而是皮肤的 DOM 结构：
-
-`dsh-claude-style` 的 `dateGroups` 功能把每个 `[data-row-key^="session:"]` 行包进一层
+侧栏皮肤之间最大的差别不在配色，而在 **DOM 结构**。原生皮肤是 `list > row`；
+`dsh-claude-style` 的 `dateGroups` 功能会把每个 `[data-row-key^="session:"]` 行包进一层
 `box`（`box = row.parentElement`），用 `appendChild(box)` 按日期整体搬动、用
 `box.style.display="none"` 整体隐藏、在 box 之间插日期标题、还往 row 里插
-`dsh-claude-date-chip`。DOM 从原生的 `list > row` 变成 `list > box > row`。
+`dsh-claude-date-chip` —— DOM 变成 `list > box > row`。
 
-旧实现有三处假设在这套结构下全崩，也正是修复的地方：
+凡是依赖「row 是列表直接子节点」「row 里只有标题」「行首留白是固定像素」的实现，在这套
+结构下都会出错。本插件因此把这三条假设全部去掉：
 
 | 旧假设 | 为什么崩 | 现在 |
 |---|---|---|
@@ -115,30 +115,34 @@ DOM 在 13px / 16px 字号下逐像素一致）。三平台 CI 每次都会跑�
 
 ## 安装
 
-四种方式，装完都要**完全退出（⌘Q）再重开** DSH NEXT —— 客户端 bundle 与宿主半都只在启动时加载。
+装完都要**完全退出（⌘Q）再重开** DSH NEXT —— 客户端 bundle 与宿主半都只在启动时加载。
 
-**从 GitHub 直接装**（推荐，不需要先发 npm）：
+**从 npm 装**（最省事）：
+
+```bash
+dsh plugin --profile <你的 profile> add dsh-router-worker
+```
+
+**从 GitHub 直接装**（跟着仓库最新代码走）：
 
 ```bash
 dsh plugin --profile <你的 profile> add github:zhuanglaihong/dsh-router-worker
 ```
 
-**从预构建 tarball 装**（免掉 `allowBuilds` 构建授权，最快）：
+**从预构建 tarball 装**（免掉构建授权，最快）：
 
 ```bash
 dsh plugin --profile <你的 profile> add \
   https://github.com/zhuanglaihong/dsh-router-worker/releases/latest/download/dsh-router-worker.tgz
 ```
 
-**从本地 clone 装**：
+**从本地 clone 装**（改代码时用）：
 
 ```bash
 dsh plugin --profile <你的 profile> add /path/to/dsh-router-worker
 ```
 
-**在已装好的 DSH NEXT 里**：用插件管理器安装这个目录（`install_bundle`）。
-
-> npm 上暂时还没有本包。发布后这里会多一条 `dsh plugin add dsh-router-worker`。
+也可以在已装好的 DSH NEXT 里用插件管理器安装这个目录（`install_bundle`）。
 
 ## 配置
 
@@ -219,12 +223,6 @@ dsh plugin --profile <profile> remove dsh-router-worker
 
 卸载时 `install()` 返回的清理函数会移除样式表、所有子行和箭头，宿主列表恢复原样。
 
-## 许可
-
-MIT
-
----
-
 ## 与「模式」（agent preset）的关系
 
 本插件从 0.2.0 起**自带一个模式**：「Router 项目经理模式」（preset id `router-worker`），装一次就有了。它从 `dsh-multitask` 1.3.3 分叉而来，保留上游的协调者窄工具面、四类 worker、两级审批闸门与 Windows 工作区 ACL 修复，并在这个基础上加了工单语义：
@@ -249,30 +247,17 @@ MIT
 
 第三种里的 `description`（`subagent` 等委派工具的可选参数，3–5 个词）就是侧栏那一行短名。自带的 Router 模式用 `ticket_create` 把这件事变成**必填**，所以那边不需要靠提示词自觉。
 
-## 三平台（Windows / macOS / Linux）
+## 兼容性
 
-纯 Node 逻辑（`store` / `outbox` / `dispatcher` / `watchdog`）和客户端 UI 天然跨平台
-（Electron 吃掉 OS 差异）。真正需要验证的是从 `dsh-multitask` 原样复制来的三处
-显式平台分支：
+- **皮肤 / 主题**：结构无关渲染，见上面「兼容自定义皮肤」。
+- **操作系统**：macOS / Windows / Linux 同一份代码；CI 在三个系统上跑语法、单测与打包。
+- **Node**：`engines.node >= 24`（依赖 `node:sqlite`）。
 
-- `presets/router-worker/workspace-acl.mjs` —— Windows ACL / 安全描述符（最大风险，
-  macOS 上模拟不出 `SetNamedSecurityInfoW failed (Win32 5)`）；
-- `presets/router-worker/approval-gate.mjs` —— win32 大小写不敏感的路径比对；
-- `presets/router-worker/composition.mjs` —— 按平台启停 `tool-pwsh` / `tool-bash`。
+详细的验证边界与真机清单在 [docs/PLATFORM.md](docs/PLATFORM.md)；
+未完成事项与后续计划在 [docs/ROADMAP.md](docs/ROADMAP.md)。
 
-`.github/workflows/ci.yml` 在 `ubuntu-latest` / `windows-latest` / `macos-latest`
-× Node 24 三矩阵上跑语法检查、`npm test`、`npm pack --dry-run`；`lib/platform.js` 把这些
-分支抽成可注入 `platform` 参数的纯函数，`test/platform.test.mjs` 让 Windows 路径
-逻辑能在非 Windows runner 上被演练。单测共 39 个，分四个文件：
-`watchdog.test.mjs`（9，卡死巡检）、`platform.test.mjs`（20，三平台路径）、
-`providers.test.mjs`（7，四类 worker 的 provider 契约）、
-`sidebar-structure.test.mjs`（3，原生 / claude-style 两种 DOM 下侧栏树不脱节）。
-`npm test` = `node --test`（无文件参数，Node 自动发现新测试），所以以后加测试不会漏跑。
-`package.json` 要求 `engines.node >= 24`（`node:sqlite`）；低版本会降级成内存工单表并告警，不崩但不落库。
+---
 
-**诚实边界**：本机只有 macOS。CI 无显示环境、无法复现 Win32 ACL，所以 Electron
-GUI 与 ACL 冒烟只能在真实 Windows / Linux 机器上人工完成 —— 清单在
-[docs/PLATFORM.md](docs/PLATFORM.md)。发布口径按
-「macOS 真机已验；Windows / Linux 通过 CI 代码层验证（语法 + 单测 + 打包），
-GUI 与 ACL 冒烟待真机」写，不夸大。
+## 许可
 
+MIT
