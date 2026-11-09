@@ -1,0 +1,53 @@
+# Release —— 推 tag（v*）时跑一遍测试、打预构建 tarball 并挂到 GitHub Release。
+#
+# 为什么要这一步：插件市场（awesome-dsh-plugin 目录）给「未发布到 npm」的插件两条
+# 安装路径 —— 从源码构建（`dsh plugin add github:owner/repo`），或用条目里的
+# `tarball:` 字段指向一个**预构建**的 .tgz。后者免掉 allowBuilds 构建授权，用户
+# 点一下就能装。
+#
+# tarball 的资产名必须是**不带版本号**的字面量：条目的 URL 用
+# `releases/latest/download/<文件名>`，其中 `latest` 在请求时解析，但**文件名是照
+# 字面取的**。资产名里带版本号，这次提交有效、下次发版就 404（awesome 的
+# contributing.md 明确警告过这个静默腐坏）。所以这里固定产出 `dsh-router-worker.tgz`。
+
+name: Release
+
+"on":
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # 发版前必须全绿：39 个单测覆盖 Watchdog / 三平台路径判定 / provider 契约 /
+      # 侧栏树在原生与 claude-style 两种 DOM 下的挂靠。
+      - name: Unit tests
+        run: npm test
+
+      # 预构建 tarball。--pack-destination 输出到 out/，文件名固定去掉版本号。
+      - name: Pack prebuilt tarball
+        run: |
+          mkdir -p out
+          npm pack --pack-destination out
+          mv out/dsh-router-worker-*.tgz out/dsh-router-worker.tgz
+          ls -l out
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/dsh-router-worker.tgz
+          generate_release_notes: true
+          fail_on_unmatched_files: true

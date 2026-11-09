@@ -6,6 +6,25 @@
 
 合并单包：装一次，得到「Router 项目经理模式」+ 侧栏子对话树。
 
+### 发布准备：market 条目 + Release 工作流 + peer 范围修复
+
+- **`peerDependencies` / `dsh.engines.dsh` 的版本范围原来写错了**：`>=0.2.0-rc.1`
+  这个看似很宽的范围，按 node-semver 的预发布规则**匹配不到** `0.2.1-rc.2`
+  和 `0.2.2-rc.1`（只有当范围里存在某个与目标版本同 `major.minor.patch` 元组、
+  且自身带预发布标签的比较符时，预发布版本才被放行）。后果是所有用预发布版
+  DSH 的用户 `npm install` 时会撞 `ERESOLVE`。改成显式 `||` 分支：
+  `>=0.2.0-rc.1 <0.2.1-0 || >=0.2.1-rc.1 <0.2.2-0 || >=0.2.2-rc.1 <0.3.0-0`，
+  实测 `0.2.0-rc.1 / 0.2.0 / 0.2.1-rc.2 / 0.2.1 / 0.2.2-rc.1 / 0.2.2 / 0.2.9`
+  全部放行，`0.1.9` 与 `0.3.0-rc.1` 仍被排除。
+- 新增 `docs/market-entry.yml`：提给 `awesome-dsh-plugin` 的条目模板（一个插件一个
+  文件，`data/plugins/zhuanglaihong__dsh-router-worker.yml`），含 `tarball:` 指向
+  预构建包。
+- 新增 `.github/workflows/release.yml`：推 `v*` tag 时跑单测、打预构建 tarball、
+  挂到 GitHub Release。资产名固定为**不带版本号**的 `dsh-router-worker.tgz` ——
+  `releases/latest/download/<文件名>` 里的文件名是照字面取的，带版本号会下次发版就 404。
+- `README.md` 的「安装」从一条本地路径扩成四条（GitHub 源码 / 预构建 tarball /
+  本地 clone / 插件管理器），并注明 npm 上暂时还没有本包。
+
 ### 侧栏树改为「结构无关」渲染（兼容自定义皮肤 / Claude-style）
 
 用户启用 `dsh-claude-style` 后侧栏树整块错位（主行变空灰条、子行与连接线断成两截）。

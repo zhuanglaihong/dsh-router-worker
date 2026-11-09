@@ -115,11 +115,30 @@ DOM 在 13px / 16px 字号下逐像素一致）。三平台 CI 每次都会跑�
 
 ## 安装
 
+四种方式，装完都要**完全退出（⌘Q）再重开** DSH NEXT —— 客户端 bundle 与宿主半都只在启动时加载。
+
+**从 GitHub 直接装**（推荐，不需要先发 npm）：
+
+```bash
+dsh plugin --profile <你的 profile> add github:zhuanglaihong/dsh-router-worker
+```
+
+**从预构建 tarball 装**（免掉 `allowBuilds` 构建授权，最快）：
+
+```bash
+dsh plugin --profile <你的 profile> add \
+  https://github.com/zhuanglaihong/dsh-router-worker/releases/latest/download/dsh-router-worker.tgz
+```
+
+**从本地 clone 装**：
+
 ```bash
 dsh plugin --profile <你的 profile> add /path/to/dsh-router-worker
 ```
 
-或者在这个仓库里已经装好的 DSH 里，用插件管理器安装这个目录（`install_bundle`），装完**完全退出并重开** DSH NEXT。
+**在已装好的 DSH NEXT 里**：用插件管理器安装这个目录（`install_bundle`）。
+
+> npm 上暂时还没有本包。发布后这里会多一条 `dsh plugin add dsh-router-worker`。
 
 ## 配置
 
